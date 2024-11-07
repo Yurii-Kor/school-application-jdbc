@@ -1,0 +1,94 @@
+package ua.foxminded.schoolapplication.dao;
+
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.InputStream;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Properties;
+
+public class ConnectionPool {
+	private static final Logger logger = LoggerFactory.getLogger(ConnectionPool.class);
+	private static final String PROPERTIES_FILE = "hikari.properties";
+
+	private static ConnectionPool instance;
+	private final HikariDataSource dataSource;
+
+	private ConnectionPool() {
+		this.dataSource = createDataSource();
+	}
+
+	public static ConnectionPool getInstance() {
+		if (instance == null) {
+			instance = new ConnectionPool();
+			logger.info("ConnectionPool instance created.");
+		}
+
+		return instance;
+	}
+
+	public void close() {
+		if (dataSource != null && !dataSource.isClosed()) {
+			logger.info("Closing HikariDataSource and releasing all connections.");
+			dataSource.close();
+		}
+	}
+	
+	Connection getConnection() throws SQLException {
+		logger.debug("Attempting to get a connection from HikariDataSource.");
+		return dataSource.getConnection();
+	}
+
+	private HikariDataSource createDataSource() {
+		try {
+			logger.debug("Creating HikariDataSource.");
+			HikariConfig config = createConfig();
+			HikariDataSource dataSource = new HikariDataSource(config);
+			logger.info("HikariDataSource successfully created.");
+
+			return dataSource;
+		} catch (Exception e) {
+			logger.error("Failed to create HikariDataSource", e);
+			throw new DAOException("Failed to create HikariDataSource", e);
+		}
+	}
+
+	private HikariConfig createConfig() {
+		logger.debug("Initializing HikariConfig for database connection pool.");
+
+		try {
+			Properties properties = loadProperties();
+			HikariConfig config = new HikariConfig(properties);
+			logger.debug("HikariConfig initialized with settings: jdbcUrl={}, username={}, maxPoolSize={}, minIdle={}",
+					config.getJdbcUrl(), config.getUsername(), config.getMaximumPoolSize(), config.getMinimumIdle());
+
+			return config;
+		} catch (Exception e) {
+			logger.error("Failed to initialize HikariConfig", e);
+			throw new DAOException("Failed to initialize HikariConfig", e);
+		}
+	}
+
+	private Properties loadProperties() {
+		logger.debug("Loading properties from file: {}", PROPERTIES_FILE);
+
+		Properties properties = new Properties();
+		try (InputStream inputStream = ConnectionPool.class.getClassLoader().getResourceAsStream(PROPERTIES_FILE)) {
+			if (inputStream == null) {
+				logger.warn("Properties file not found: {}", PROPERTIES_FILE);
+				throw new DAOException("Properties file not found: " + PROPERTIES_FILE);
+			}
+
+			properties.load(inputStream);
+			logger.info("Properties loaded successfully from {}", PROPERTIES_FILE);
+
+			return properties;
+		} catch (Exception e) {
+			logger.error("Failed to load properties file: {}", PROPERTIES_FILE, e);
+			throw new DAOException("Failed to load properties file: " + PROPERTIES_FILE, e);
+		}
+	}
+}
