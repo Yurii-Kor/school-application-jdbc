@@ -15,7 +15,7 @@ public class App {
             System.err.println("Error initializing database: " + e.getMessage());
             e.printStackTrace();
         }
-        
+
         ConnectionPool.getInstance().close();
         System.out.println("Finish!");
     }
