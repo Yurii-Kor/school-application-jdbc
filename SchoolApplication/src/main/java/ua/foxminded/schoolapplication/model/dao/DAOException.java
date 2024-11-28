@@ -1,4 +1,4 @@
-package ua.foxminded.schoolapplication.dao;
+package ua.foxminded.schoolapplication.model.dao;
 
 public class DAOException extends RuntimeException {
     private static final long serialVersionUID = 1L;

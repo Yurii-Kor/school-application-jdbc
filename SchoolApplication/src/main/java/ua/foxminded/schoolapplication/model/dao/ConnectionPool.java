@@ -1,7 +1,8 @@
-package ua.foxminded.schoolapplication.dao;
+package ua.foxminded.schoolapplication.model.dao;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
