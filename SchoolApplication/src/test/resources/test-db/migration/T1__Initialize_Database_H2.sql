@@ -1,16 +1,13 @@
--- Удаление таблиц, если они существуют
 DROP TABLE IF EXISTS student_courses;
 DROP TABLE IF EXISTS students;
 DROP TABLE IF EXISTS courses;
 DROP TABLE IF EXISTS groups;
 
--- Создание таблицы groups
 CREATE TABLE groups (
     group_id INT PRIMARY KEY AUTO_INCREMENT,
-    group_name VARCHAR(255) NOT NULL
+    group_name VARCHAR(255) NOT NULL UNIQUE
 );
 
--- Создание таблицы students
 CREATE TABLE students (
     student_id INT PRIMARY KEY AUTO_INCREMENT,
     group_id INT REFERENCES groups(group_id) ON DELETE CASCADE,
@@ -18,14 +15,12 @@ CREATE TABLE students (
     last_name VARCHAR(255) NOT NULL
 );
 
--- Создание таблицы courses
 CREATE TABLE courses (
     course_id INT PRIMARY KEY AUTO_INCREMENT,
-    course_name VARCHAR(255) NOT NULL,
+    course_name VARCHAR(255) NOT NULL UNIQUE,
     course_description TEXT
 );
 
--- Создание таблицы student_courses
 CREATE TABLE student_courses (
     student_id INT REFERENCES students(student_id) ON DELETE CASCADE,
     course_id INT REFERENCES courses(course_id) ON DELETE CASCADE,

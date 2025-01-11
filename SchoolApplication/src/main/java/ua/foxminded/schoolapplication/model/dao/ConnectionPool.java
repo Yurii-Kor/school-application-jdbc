@@ -7,47 +7,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.Properties;
 
 public class ConnectionPool {
     private static final Logger logger = LoggerFactory.getLogger(ConnectionPool.class);
     private static final String PROPERTIES_FILE = "hikari.properties";
-
-    private static ConnectionPool instance;
-    private final HikariDataSource dataSource;
+    private static final HikariDataSource dataSource = createDataSource();
 
     private ConnectionPool() {
-        this.dataSource = createDataSource();
     }
 
-    public static ConnectionPool getInstance() {
-        if (instance == null) {
-            instance = new ConnectionPool();
-            logger.info("ConnectionPool instance created.");
-        }
-
-        return instance;
-    }
-
-    public HikariDataSource getDataSource() {
+    public static HikariDataSource getDataSource() {
         return dataSource;
     }
 
-    public void close() {
-        if (dataSource != null && !dataSource.isClosed()) {
-            logger.info("Closing HikariDataSource and releasing all connections.");
-            dataSource.close();
-        }
-    }
-
-    Connection getConnection() throws SQLException {
-        logger.debug("Attempting to get a connection from HikariDataSource.");
-        return dataSource.getConnection();
-    }
-
-    private HikariDataSource createDataSource() {
+    private static HikariDataSource createDataSource() {
         try {
             logger.debug("Creating HikariDataSource.");
             HikariConfig config = createConfig();
@@ -61,7 +35,7 @@ public class ConnectionPool {
         }
     }
 
-    private HikariConfig createConfig() {
+    private static HikariConfig createConfig() {
         logger.debug("Initializing HikariConfig for database connection pool.");
 
         try {
@@ -80,7 +54,7 @@ public class ConnectionPool {
         }
     }
 
-    private Properties loadProperties() {
+    private static Properties loadProperties() {
         logger.debug("Loading properties from file: {}", PROPERTIES_FILE);
 
         Properties properties = new Properties();

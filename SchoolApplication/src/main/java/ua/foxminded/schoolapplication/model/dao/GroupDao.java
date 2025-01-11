@@ -3,20 +3,30 @@ package ua.foxminded.schoolapplication.model.dao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ua.foxminded.schoolapplication.model.domain.Group;
+import ua.foxminded.schoolapplication.model.validation.GroupValidator;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 
 public class GroupDao {
-    private static final Logger logger = LoggerFactory.getLogger(GroupDao.class);
+    private static final String TABLE = "groups";
+    private static final String COLUMN_GROUP_ID = "group_id";
+    private static final String COLUMN_GROUP_NAME = "group_name";
 
-    private static final String INSERT_GROUP = "INSERT INTO groups (group_name) VALUES (?)";
-    private static final String FIND_GROUP_BY_ID = "SELECT group_id, group_name FROM groups WHERE group_id = ?";
-    private static final String UPDATE_GROUP = "UPDATE groups SET group_name = ? WHERE group_id = ?";
-    private static final String DELETE_GROUP = "DELETE FROM groups WHERE group_id = ?";
+    private static final String INSERT_GROUP = String
+            .format("INSERT INTO %s (%s) VALUES (?)", TABLE, COLUMN_GROUP_NAME);
+
+    private static final String FIND_GROUP_BY_ID = String
+            .format("SELECT * FROM %s WHERE %s = ?", TABLE, COLUMN_GROUP_ID);
+
+    private static final String UPDATE_GROUP = String
+            .format("UPDATE %s SET %s = ? WHERE %s = ?", TABLE, COLUMN_GROUP_NAME, COLUMN_GROUP_ID);
+
+    private static final String DELETE_GROUP = String.format("DELETE FROM %s WHERE %s = ?", TABLE, COLUMN_GROUP_ID);
 
     private static final int INSERT_GROUP_NAME_POSITION = 1;
     private static final int INSERT_RETRIVED_ID_POSITION = 1;
@@ -25,50 +35,72 @@ public class GroupDao {
     private static final int UPDATE_GROUP_ID_POSITION = 2;
     private static final int DELETE_GROUP_ID_POSITION = 1;
 
-    private static final String COLUMN_GROUP_ID = "group_id";
-    private static final String COLUMN_GROUP_NAME = "group_name";
-
     private static final Group NOT_FOUND_GROUP = new Group(-1, "NOT_FOUND");
+    private static final String SQL_STATE_UNIQUE_VIOLATION = "23505";
 
-    private final ConnectionPool connectionPool;
+    private static final Logger logger = LoggerFactory.getLogger(GroupDao.class);
+
+    private final GroupValidator groupValidator;
 
     public GroupDao() {
-        this.connectionPool = ConnectionPool.getInstance();
+        this.groupValidator = new GroupValidator();
     }
 
-    public int addGroup(Group group) {
-        validateNotNull(group);
-        logger.debug("Adding group: {}", group);
+    public int[] addGroups(Group... groups) throws DAOException {
+        validateInputGroups(groups);
+        logger.debug("Adding groups: {}", Arrays.toString(groups));
 
-        try (Connection connection = connectionPool.getConnection();
+        try (Connection connection = ConnectionPool.getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(INSERT_GROUP,
                         Statement.RETURN_GENERATED_KEYS)) {
 
-            statement.setString(INSERT_GROUP_NAME_POSITION, group.getGroupName());
-            statement.executeUpdate();
+            connection.setAutoCommit(false);
 
-            try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    int generatedId = generatedKeys.getInt(INSERT_RETRIVED_ID_POSITION);
-                    group.setGroupId(generatedId);
-                    logger.debug("Generated group ID: {}", generatedId);
-                    logger.info("Group added successfully: {}", group);
-                    return generatedId;
-                } else {
-                    logger.error("Failed to retrieve generated group ID.");
-                    throw new DAOException("Failed to retrieve generated group ID.");
+            try {
+                for (Group group : groups) {
+                    statement.setString(INSERT_GROUP_NAME_POSITION, group.getGroupName());
+                    statement.addBatch();
                 }
+
+                int[] affectedRecords = statement.executeBatch();
+                logger.debug("Batch executed, affected records: {}", affectedRecords.length);
+
+                try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+                    int[] generatedIds = new int[groups.length];
+                    int index = 0;
+                    while (generatedKeys.next()) {
+                        if (index >= groups.length) {
+                            throw new SQLException("Number of generated keys exceeds number of inserted groups.");
+                        }
+                        int generatedId = generatedKeys.getInt(INSERT_RETRIVED_ID_POSITION);
+                        generatedIds[index++] = generatedId;
+                        groups[index - 1].setGroupId(generatedId);
+                    }
+
+                    if (index != groups.length) {
+                        throw new SQLException("Number of generated keys does not match number of inserted groups.");
+                    }
+
+                    connection.commit();
+                    logger.info("All groups added successfully. Generated IDs: {}", Arrays.toString(generatedIds));
+                    return generatedIds;
+                }
+
+            } catch (SQLException e) {
+                handleSQLException(connection, e, "add groups");
+                return new int[0];
             }
+
         } catch (SQLException e) {
-            logger.error("Failed to add group: {}", group, e);
-            throw new DAOException("Failed to add group: " + group, e);
+            logger.error("Failed to establish connection or prepare statement.", e);
+            throw new DAOException("Failed to add groups due to connection issues.", e);
         }
     }
 
-    public Group findGroupById(int groupId) {
+    public Group findGroupById(int groupId) throws DAOException {
         logger.debug("Searching for group with ID: {}", groupId);
 
-        try (Connection connection = connectionPool.getConnection();
+        try (Connection connection = ConnectionPool.getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(FIND_GROUP_BY_ID)) {
 
             statement.setInt(FIND_GROUP_BY_ID_POSITION, groupId);
@@ -89,11 +121,11 @@ public class GroupDao {
         }
     }
 
-    public void updateGroup(Group group) {
-        validateNotNull(group);
+    public void updateGroup(Group group) throws DAOException {
+        validateInputGroups(group);
         logger.debug("Updating group: {}", group);
 
-        try (Connection connection = connectionPool.getConnection();
+        try (Connection connection = ConnectionPool.getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(UPDATE_GROUP)) {
 
             statement.setString(UPDATE_GROUP_NAME_POSITION, group.getGroupName());
@@ -112,10 +144,10 @@ public class GroupDao {
         }
     }
 
-    public void deleteGroup(int groupId) {
+    public void deleteGroup(int groupId) throws DAOException {
         logger.debug("Attempting to delete group with ID: {}", groupId);
 
-        try (Connection connection = connectionPool.getConnection();
+        try (Connection connection = ConnectionPool.getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(DELETE_GROUP)) {
 
             statement.setInt(DELETE_GROUP_ID_POSITION, groupId);
@@ -132,9 +164,30 @@ public class GroupDao {
             throw new DAOException("Failed to delete group with ID: " + groupId, e);
         }
     }
-    
-    private void validateNotNull(Group group) {
-        if (group == null) {
+
+    private void handleSQLException(Connection connection, SQLException e, String operationDescription)
+            throws DAOException {
+
+        if (connection != null) {
+            try {
+                connection.rollback();
+                logger.debug("Transaction rolled back due to SQLException during '{}'.", operationDescription);
+            } catch (SQLException rollbackEx) {
+                logger.error("Failed to rollback transaction during '{}'.", operationDescription, rollbackEx);
+            }
+        }
+
+        if (SQL_STATE_UNIQUE_VIOLATION.equals(e.getSQLState())) {
+            logger.error("Unique constraint violated for group_name during '{}'.", operationDescription, e);
+            throw new DAOException("A group with the same name already exists.", e);
+        }
+
+        logger.error("Failed to {}: {}", operationDescription, e.getMessage(), e);
+        throw new DAOException("Failed to " + operationDescription + ".", e);
+    }
+
+    private void validateInputGroups(Group... groups) {
+        if (!groupValidator.validateGroups(groups)) {
             String methodName = Thread.currentThread().getStackTrace()[2].getMethodName();
             String errorMessage = String.format("Method '%s' received a null argument", methodName);
             logger.error(errorMessage);

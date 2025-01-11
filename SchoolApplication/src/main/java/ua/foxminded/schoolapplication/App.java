@@ -5,6 +5,7 @@ import ua.foxminded.schoolapplication.model.dao.DAOException;
 import ua.foxminded.schoolapplication.model.dao.DaoInitializer;
 import ua.foxminded.schoolapplication.model.dao.GroupDao;
 import ua.foxminded.schoolapplication.model.domain.Group;
+import ua.foxminded.schoolapplication.model.validation.GroupValidator;
 
 public class App {
     public static void main(String[] args) {
@@ -21,8 +22,8 @@ public class App {
         GroupDao groupDao = new GroupDao();
 
         // Step 1: Add a new group
-        Group newGroup = new Group(0, "Test Group");
-        groupDao.addGroup(newGroup);
+        Group newGroup = new Group(0, "TestGroup-11");
+        groupDao.addGroups(newGroup);
         System.out.println("Added group: " + newGroup);
 
         // Step 2: Retrieve the added group by ID
@@ -30,7 +31,7 @@ public class App {
         System.out.println("Retrieved group: " + retrievedGroup);
 
         // Step 3: Update the group name
-        retrievedGroup.setGroupName("Updated Test Group");
+        retrievedGroup.setGroupName("UpdatedTestGroup-12");
         groupDao.updateGroup(retrievedGroup);
         System.out.println("Updated group: " + retrievedGroup);
 
@@ -46,7 +47,10 @@ public class App {
         Group deletedGroup = groupDao.findGroupById(updatedGroup.getGroupId());
         System.out.println("Deleted group retrieval attempt: " + deletedGroup);
 
-        ConnectionPool.getInstance().close();
+        ConnectionPool.getDataSource().close();
         System.out.println("Finish!");
+        
+        GroupValidator validator = new GroupValidator();
+        System.out.println(validator.validateGroups(new Group(1, "A-1")));
     }
 }

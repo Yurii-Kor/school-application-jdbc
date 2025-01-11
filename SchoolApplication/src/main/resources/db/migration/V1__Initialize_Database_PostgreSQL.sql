@@ -10,7 +10,7 @@ DROP SEQUENCE IF EXISTS course_id_seq;
 CREATE SEQUENCE group_id_seq START 100;
 CREATE TABLE groups (
     group_id INT PRIMARY KEY DEFAULT nextval('group_id_seq'),
-    group_name VARCHAR(255) NOT NULL
+    group_name VARCHAR(255) NOT NULL UNIQUE
 );
 
 CREATE SEQUENCE student_id_seq START 1000;
@@ -24,7 +24,7 @@ CREATE TABLE students (
 CREATE SEQUENCE course_id_seq START 1;
 CREATE TABLE courses (
     course_id INT PRIMARY KEY DEFAULT nextval('course_id_seq'),
-    course_name VARCHAR(255) NOT NULL,
+    course_name VARCHAR(255) NOT NULL UNIQUE,
     course_description TEXT
 );
 

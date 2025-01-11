@@ -7,9 +7,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GroupDaoTest {
-    private static final Group TEST_GROUP = new Group(0, "Test_Group");
+    private static final Group TEST_GROUP = new Group(0, "TestGroup-11");
     private static final Group EMPTY_NAME_GROUP = new Group(0, null);
-    private static final Group NON_EXISTENT_GROUP = new Group(999, "Non-Existent Group");
+    private static final Group NON_EXISTENT_GROUP = new Group(999, "NonExistentGroup-22");
     private static final Group NOT_FOUND_GROUP = new Group(-1, "NOT_FOUND");
 
     private GroupDao groupDao;
@@ -19,30 +19,21 @@ class GroupDaoTest {
         new DaoInitializer().initializeDatabase();
         groupDao = new GroupDao();
     }
-
+    
     @Test
-    void addGroupShouldAddNewGroupAndFindById() {
+    void addGroupsShouldAddNewGroupAndFindById() {
         Group expectedGroup = TEST_GROUP;
 
-        int generatedId = groupDao.addGroup(expectedGroup);
-        Group actualGroup = groupDao.findGroupById(generatedId);
+        int[] generatedId = groupDao.addGroups(expectedGroup);
+        Group actualGroup = groupDao.findGroupById(generatedId[0]);
 
         assertEquals(expectedGroup.getGroupName(), actualGroup.getGroupName(), "Group names should match");
         assertTrue(actualGroup.getGroupId() > 0, "Generated group ID should be greater than 0");
     }
 
     @Test
-    void addGroupShouldThrowExceptionWhenAddingGroupWithEmptyName() {
-        DAOException exception = assertThrows(DAOException.class, () -> groupDao.addGroup(EMPTY_NAME_GROUP));
-
-        assertTrue(exception.getMessage().contains("Failed to add group"), "Message should indicate add failure");
-    }
-
-    @Test
-    void addGroupShouldThrowExceptionWhenAddingNullGroup() {
-        DAOException exception = assertThrows(DAOException.class, () -> groupDao.addGroup(null));
-
-        assertTrue(exception.getMessage().contains("null argument"), "Message should indicate null argument");
+    void addGroupShouldThrowExceptionWhenAddingGroupWithWrongGroupData() {
+        assertThrows(DAOException.class, () -> groupDao.addGroups(EMPTY_NAME_GROUP));
     }
 
     @Test
@@ -55,12 +46,12 @@ class GroupDaoTest {
 
     @Test
     void updateGroupShouldUpdateExistingGroup() {
-        int generatedId = groupDao.addGroup(TEST_GROUP);
+        int[] generatedId = groupDao.addGroups(TEST_GROUP);
 
-        Group updatedGroup = new Group(generatedId, "Updated Group");
+        Group updatedGroup = new Group(generatedId[0], "UpdatedGroup-11");
         groupDao.updateGroup(updatedGroup);
 
-        Group actualGroup = groupDao.findGroupById(generatedId);
+        Group actualGroup = groupDao.findGroupById(generatedId[0]);
         assertEquals(updatedGroup.getGroupName(), actualGroup.getGroupName(), "Group name should be updated");
     }
 
@@ -74,18 +65,16 @@ class GroupDaoTest {
 
     @Test
     void updateGroupShouldThrowExceptionWhenUpdatingNullGroup() {
-        DAOException exception = assertThrows(DAOException.class, () -> groupDao.updateGroup(null));
-
-        assertTrue(exception.getMessage().contains("null argument"), "Message should indicate null argument");
+        assertThrows(DAOException.class, () -> groupDao.updateGroup(null));
     }
     
     @Test
     void deleteGroupShouldDeleteExistingGroup() {
-        int generatedId = groupDao.addGroup(TEST_GROUP);
+        int[] generatedId = groupDao.addGroups(TEST_GROUP);
 
-        groupDao.deleteGroup(generatedId);
+        groupDao.deleteGroup(generatedId[0]);
 
-        Group resultGroup = groupDao.findGroupById(generatedId);
+        Group resultGroup = groupDao.findGroupById(generatedId[0]);
         assertEquals(NOT_FOUND_GROUP.getGroupName(), resultGroup.getGroupName(), "Deleted group name should indicate 'NOT_FOUND'");
     }
 

@@ -37,7 +37,7 @@ public class DaoInitializer {
         try {
             Properties properties = loadProperties(CONFIG_FILE);
             return Flyway.configure()
-                    .dataSource(ConnectionPool.getInstance().getDataSource())
+                    .dataSource(ConnectionPool.getDataSource())
                     .configuration(properties)
                     .load();
         } catch (Exception e) {
