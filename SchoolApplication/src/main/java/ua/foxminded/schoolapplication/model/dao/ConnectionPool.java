@@ -7,70 +7,80 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Properties;
 
 public class ConnectionPool {
-    private static final Logger logger = LoggerFactory.getLogger(ConnectionPool.class);
-    private static final String PROPERTIES_FILE = "hikari.properties";
-    private static final HikariDataSource dataSource = createDataSource();
+	private static final Logger logger = LoggerFactory.getLogger(ConnectionPool.class);
+	private static final String PROPERTIES_FILE = "hikari.properties";
+	private static final HikariDataSource dataSource = createDataSource();
 
-    private ConnectionPool() {
-    }
+	private ConnectionPool() {
+	}
 
-    public static HikariDataSource getDataSource() {
-        return dataSource;
-    }
+	public static HikariDataSource getDataSource() {
+		return dataSource;
+	}
 
-    private static HikariDataSource createDataSource() {
-        try {
-            logger.debug("Creating HikariDataSource.");
-            HikariConfig config = createConfig();
-            HikariDataSource dataSource = new HikariDataSource(config);
-            logger.info("HikariDataSource successfully created.");
+	public static Connection getConnection() throws SQLException {
+		return dataSource.getConnection();
+	}
+	
+	public static void closeSource() {
+		dataSource.close();
+	}
 
-            return dataSource;
-        } catch (Exception e) {
-            logger.error("Failed to create HikariDataSource", e);
-            throw new DAOException("Failed to create HikariDataSource", e);
-        }
-    }
+	private static HikariDataSource createDataSource() {
+		try {
+			logger.debug("Creating HikariDataSource.");
+			HikariConfig config = createConfig();
+			HikariDataSource dataSource = new HikariDataSource(config);
+			logger.info("HikariDataSource successfully created.");
 
-    private static HikariConfig createConfig() {
-        logger.debug("Initializing HikariConfig for database connection pool.");
+			return dataSource;
+		} catch (Exception e) {
+			logger.error("Failed to create HikariDataSource", e);
+			throw new DAOException("Failed to create HikariDataSource", e);
+		}
+	}
 
-        try {
-            Properties properties = loadProperties();
-            HikariConfig config = new HikariConfig(properties);
-            logger.debug("HikariConfig initialized with settings: jdbcUrl={}, username={}, maxPoolSize={}, minIdle={}",
-                    config.getJdbcUrl(),
-                    config.getUsername(),
-                    config.getMaximumPoolSize(),
-                    config.getMinimumIdle());
+	private static HikariConfig createConfig() {
+		logger.debug("Initializing HikariConfig for database connection pool.");
 
-            return config;
-        } catch (Exception e) {
-            logger.error("Failed to initialize HikariConfig", e);
-            throw new DAOException("Failed to initialize HikariConfig", e);
-        }
-    }
+		try {
+			Properties properties = loadProperties();
+			HikariConfig config = new HikariConfig(properties);
+			logger.debug("HikariConfig initialized with settings: jdbcUrl={}, username={}, maxPoolSize={}, minIdle={}",
+					config.getJdbcUrl(),
+					config.getUsername(),
+					config.getMaximumPoolSize(),
+					config.getMinimumIdle());
 
-    private static Properties loadProperties() {
-        logger.debug("Loading properties from file: {}", PROPERTIES_FILE);
+			return config;
+		} catch (Exception e) {
+			logger.error("Failed to initialize HikariConfig", e);
+			throw new DAOException("Failed to initialize HikariConfig", e);
+		}
+	}
 
-        Properties properties = new Properties();
-        try (InputStream inputStream = ConnectionPool.class.getClassLoader().getResourceAsStream(PROPERTIES_FILE)) {
-            if (inputStream == null) {
-                logger.warn("Properties file not found: {}", PROPERTIES_FILE);
-                throw new DAOException("Properties file not found: " + PROPERTIES_FILE);
-            }
+	private static Properties loadProperties() {
+		logger.debug("Loading properties from file: {}", PROPERTIES_FILE);
 
-            properties.load(inputStream);
-            logger.info("Properties loaded successfully from {}", PROPERTIES_FILE);
+		Properties properties = new Properties();
+		try (InputStream inputStream = ConnectionPool.class.getClassLoader().getResourceAsStream(PROPERTIES_FILE)) {
+			if (inputStream == null) {
+				logger.warn("Properties file not found: {}", PROPERTIES_FILE);
+				throw new DAOException("Properties file not found: " + PROPERTIES_FILE);
+			}
 
-            return properties;
-        } catch (Exception e) {
-            logger.error("Failed to load properties file: {}", PROPERTIES_FILE, e);
-            throw new DAOException("Failed to load properties file: " + PROPERTIES_FILE, e);
-        }
-    }
+			properties.load(inputStream);
+			logger.info("Properties loaded successfully from {}", PROPERTIES_FILE);
+
+			return properties;
+		} catch (Exception e) {
+			logger.error("Failed to load properties file: {}", PROPERTIES_FILE, e);
+			throw new DAOException("Failed to load properties file: " + PROPERTIES_FILE, e);
+		}
+	}
 }
