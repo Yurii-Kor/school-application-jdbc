@@ -47,7 +47,7 @@ public class App {
         Group deletedGroup = groupDao.findGroupById(updatedGroup.getGroupId());
         System.out.println("Deleted group retrieval attempt: " + deletedGroup);
 
-        ConnectionPool.getDataSource().close();
+        ConnectionPool.closeSource();
         System.out.println("Finish!");
         
         GroupValidator validator = new GroupValidator();

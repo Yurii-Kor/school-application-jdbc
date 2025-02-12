@@ -16,12 +16,12 @@ CREATE TABLE groups (
 CREATE SEQUENCE student_id_seq START 1000;
 CREATE TABLE students (
     student_id INT PRIMARY KEY DEFAULT nextval('student_id_seq'),
-    group_id INT REFERENCES groups(group_id) ON DELETE CASCADE,
+    group_id INT REFERENCES groups(group_id) NOT NULL,
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL
 );
 
-CREATE SEQUENCE course_id_seq START 1;
+CREATE SEQUENCE course_id_seq START 10;
 CREATE TABLE courses (
     course_id INT PRIMARY KEY DEFAULT nextval('course_id_seq'),
     course_name VARCHAR(255) NOT NULL UNIQUE,
