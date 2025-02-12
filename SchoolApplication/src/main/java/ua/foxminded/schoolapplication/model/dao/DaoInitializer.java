@@ -4,6 +4,8 @@ import org.flywaydb.core.Flyway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import ua.foxminded.schoolapplication.model.dao.exception.DAOException;
+
 import java.io.InputStream;
 import java.util.Properties;
 

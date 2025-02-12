@@ -1,6 +1,8 @@
 package ua.foxminded.schoolapplication.model.dao;
 
 import org.junit.jupiter.api.*;
+
+import ua.foxminded.schoolapplication.model.dao.exception.DAOException;
 import ua.foxminded.schoolapplication.model.domain.Group;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -10,7 +12,7 @@ class GroupDaoTest {
 	private static final Group TEST_GROUP = new Group(0, "TestGroup-11");
 	private static final Group EMPTY_NAME_GROUP = new Group(0, null);
 	private static final Group NON_EXISTENT_GROUP = new Group(999, "NonExistentGroup-22");
-	private static final Group NOT_FOUND_GROUP = new Group(-1, "NOT_FOUND");
+	private static final Group NOT_FOUND_GROUP = GroupDao.NOT_FOUND_GROUP;
 
 	private static final String UPDATED_GROUP_NAME = "UpdatedGroup-33";
 

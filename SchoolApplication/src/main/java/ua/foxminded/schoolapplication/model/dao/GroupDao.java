@@ -2,6 +2,9 @@ package ua.foxminded.schoolapplication.model.dao;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import ua.foxminded.schoolapplication.model.dao.exception.DAOException;
+import ua.foxminded.schoolapplication.model.dao.exception.GroupDeletionDaoException;
 import ua.foxminded.schoolapplication.model.domain.Group;
 import ua.foxminded.schoolapplication.model.validation.GroupValidator;
 
@@ -35,8 +38,9 @@ public class GroupDao {
 	private static final int UPDATE_GROUP_ID_POSITION = 2;
 	private static final int DELETE_GROUP_ID_POSITION = 1;
 
-	private static final Group NOT_FOUND_GROUP = new Group(-1, "NOT_FOUND");
+	public static final Group NOT_FOUND_GROUP = new Group(-1, "NOT_FOUND");
 	private static final String SQL_STATE_UNIQUE_VIOLATION = "23505";
+	private static final String SQL_STATE_FOREIGN_KEY_VIOLATION = "23503";
 
 	private static final Logger logger = LoggerFactory.getLogger(GroupDao.class);
 
@@ -167,6 +171,11 @@ public class GroupDao {
 
 			logger.info("Group deleted successfully with ID: {}", groupId);
 		} catch (SQLException e) {
+			if (SQL_STATE_FOREIGN_KEY_VIOLATION.equals(e.getSQLState())) {
+				logger.error("Cannot delete group with ID {} because it has dependent students", groupId, e);
+				throw new GroupDeletionDaoException("Group cannot be deleted because it has associated students", e);
+			}
+
 			logger.error("Error deleting group with ID: {}", groupId, e);
 			throw new DAOException("Failed to delete group with ID: " + groupId, e);
 		}

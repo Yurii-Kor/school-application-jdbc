@@ -3,6 +3,8 @@ package ua.foxminded.schoolapplication.model.dao;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
+import ua.foxminded.schoolapplication.model.dao.exception.DAOException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +28,7 @@ public class ConnectionPool {
 	public static Connection getConnection() throws SQLException {
 		return dataSource.getConnection();
 	}
-	
+
 	public static void closeSource() {
 		dataSource.close();
 	}
