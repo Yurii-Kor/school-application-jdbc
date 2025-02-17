@@ -2,21 +2,25 @@ package ua.foxminded.schoolapplication.model.dao;
 
 import org.junit.jupiter.api.*;
 
-import ua.foxminded.schoolapplication.model.dao.exception.DAOException;
+import ua.foxminded.schoolapplication.model.dao.constants.NotFoundConstants;
+import ua.foxminded.schoolapplication.model.dao.exception.GroupNameDAOException;
+import ua.foxminded.schoolapplication.model.dao.exception.ObjectNotFoundDAOException;
+import ua.foxminded.schoolapplication.model.dao.exception.ValidationDAOException;
 import ua.foxminded.schoolapplication.model.domain.Group;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GroupDaoTest {
-	private static final Group TEST_GROUP = new Group(0, "TestGroup-11");
-	private static final Group EMPTY_NAME_GROUP = new Group(0, null);
-	private static final Group NON_EXISTENT_GROUP = new Group(999, "NonExistentGroup-22");
-	private static final Group NOT_FOUND_GROUP = GroupDao.NOT_FOUND_GROUP;
+	static final int DEFAULT_GROUP_ID = 0;
+	static final int NON_EXISTENT_GROUP_ID = 999;
+	static final int NOT_FOUND_GROUP_ID = NotFoundConstants.NOT_FOUND.getId();
+	static final String DEFAULT_GROUP_NAME = "TestGroup-11";
+	static final String UPDATED_GROUP_NAME = "NonExistentGroup-22";
+	static final String NON_EXISTENT_GROUP_NAME = "UpdatedGroup-33";
+	static final String NOT_FOUND_GROUP_NAME = NotFoundConstants.NOT_FOUND.getName();
 
-	private static final String UPDATED_GROUP_NAME = "UpdatedGroup-33";
-
-	private GroupDao groupDao;
+	GroupDao groupDao;
 
 	@BeforeAll
 	void initDatabase() {
@@ -30,53 +34,59 @@ class GroupDaoTest {
 
 	@Test
 	void addGroupsShouldAddNewGroupAndFindById() {
-		Group expectedGroup = new Group(TEST_GROUP.getGroupId(), TEST_GROUP.getGroupName());
+		Group expectedGroup = new Group(DEFAULT_GROUP_ID, DEFAULT_GROUP_NAME);
 		groupDao.addGroups(expectedGroup);
 		Group actualGroup = groupDao.findGroupById(expectedGroup.getGroupId());
 
 		assertNotNull(actualGroup, "Returned group should not be null.");
 		assertEquals(expectedGroup.getGroupName(), actualGroup.getGroupName(), "Group names should match.");
-		assertTrue(actualGroup.getGroupId() > 0, "Generated group ID should be greater than 0.");
+		assertTrue(actualGroup.getGroupId() > DEFAULT_GROUP_ID, "Generated group ID should be greater than 0.");
 
 		groupDao.deleteGroup(actualGroup.getGroupId());
 	}
 
 	@Test
 	void addGroupsShouldThrowExceptionWhenAddingGroupWithWrongGroupData() {
-		assertThrows(DAOException.class,
-				() -> groupDao.addGroups(EMPTY_NAME_GROUP),
+		Group emptyNameGroup = new Group(DEFAULT_GROUP_ID, null);
+		assertThrows(ValidationDAOException.class,
+				() -> groupDao.addGroups(emptyNameGroup),
 				"Adding a group with an invalid group name should throw an exception.");
 	}
 
 	@Test
 	void addGroupsShouldNotAddDuplicateGroupNames() {
-		Group firstGroup = new Group(TEST_GROUP.getGroupId(), TEST_GROUP.getGroupName());
-		Group duplicateGroup = new Group(TEST_GROUP.getGroupId(), TEST_GROUP.getGroupName());
+		Group firstGroup = new Group(DEFAULT_GROUP_ID, DEFAULT_GROUP_NAME);
+		Group duplicateGroup = new Group(DEFAULT_GROUP_ID, DEFAULT_GROUP_NAME);
+
+		assertThrows(GroupNameDAOException.class,
+				() -> groupDao.addGroups(firstGroup, duplicateGroup),
+				"Adding groups with duplicate group name should rollback transaction before throwing an exception");
+
+		assertEquals(DEFAULT_GROUP_ID, firstGroup.getGroupId(), "Transaction shold be rolled back.");
+		assertEquals(DEFAULT_GROUP_ID, duplicateGroup.getGroupId(), "Transaction shold be rolled back.");
 
 		groupDao.addGroups(firstGroup);
-		DAOException exception = assertThrows(DAOException.class,
+		assertThrows(GroupNameDAOException.class,
 				() -> groupDao.addGroups(duplicateGroup),
 				"Adding a group with duplicate group name should throw an exception.");
-		assertTrue(exception.getMessage().contains("already exists"),
-				"Exception message should indicate a uniqueness violation.");
 
 		groupDao.deleteGroup(firstGroup.getGroupId());
 	}
 
 	@Test
 	void findGroupByIdShouldReturnNotFoundWhenGroupDoesNotExist() {
-		Group resultGroup = groupDao.findGroupById(NON_EXISTENT_GROUP.getGroupId());
-		assertEquals(NOT_FOUND_GROUP.getGroupId(),
+		Group resultGroup = groupDao.findGroupById(NON_EXISTENT_GROUP_ID);
+		assertEquals(NOT_FOUND_GROUP_ID,
 				resultGroup.getGroupId(),
 				"Non-existent group ID should match NOT_FOUND constant.");
-		assertEquals(NOT_FOUND_GROUP.getGroupName(),
+		assertEquals(NOT_FOUND_GROUP_NAME,
 				resultGroup.getGroupName(),
 				"Non-existent group name should match NOT_FOUND constant.");
 	}
 
 	@Test
 	void updateGroupShouldUpdateExistingGroup() {
-		Group group = new Group(TEST_GROUP.getGroupId(), TEST_GROUP.getGroupName());
+		Group group = new Group(DEFAULT_GROUP_ID, DEFAULT_GROUP_NAME);
 		groupDao.addGroups(group);
 
 		Group updatedGroup = new Group(group.getGroupId(), UPDATED_GROUP_NAME);
@@ -92,19 +102,31 @@ class GroupDaoTest {
 
 	@Test
 	void updateGroupShouldThrowExceptionWhenGroupDoesNotExist() {
-		DAOException exception = assertThrows(DAOException.class,
-				() -> groupDao.updateGroup(NON_EXISTENT_GROUP),
+		Group nonExistentGroup = new Group(NON_EXISTENT_GROUP_ID, NON_EXISTENT_GROUP_NAME);
+		assertThrows(ObjectNotFoundDAOException.class,
+				() -> groupDao.updateGroup(nonExistentGroup),
 				"Updating a non-existent group should throw an exception.");
-		assertTrue(exception.getMessage().contains("No group found"),
-				"Exception message should indicate that no group was found for update.");
+	}
+
+	@Test
+	void updateGroupShouldThrowExceptionWhenUpdatingExistentGroupName() {
+		Group group = new Group(DEFAULT_GROUP_ID, DEFAULT_GROUP_NAME);
+		Group groupWithExistentGroupName = new Group(DEFAULT_GROUP_ID, UPDATED_GROUP_NAME);
+		groupDao.addGroups(group, groupWithExistentGroupName);
+
+		Group updatedGroup = new Group(group.getGroupId(), UPDATED_GROUP_NAME);
+		assertThrows(GroupNameDAOException.class,
+				() -> groupDao.updateGroup(updatedGroup),
+				"Updating a group with an existing name should throw an exception.");
+
+		groupDao.deleteGroup(group.getGroupId());
+		groupDao.deleteGroup(groupWithExistentGroupName.getGroupId());
 	}
 
 	@Test
 	void deleteGroupShouldThrowExceptionWhenGroupDoesNotExist() {
-		DAOException exception = assertThrows(DAOException.class,
-				() -> groupDao.deleteGroup(NON_EXISTENT_GROUP.getGroupId()),
+		assertThrows(ObjectNotFoundDAOException.class,
+				() -> groupDao.deleteGroup(NON_EXISTENT_GROUP_ID),
 				"Deleting a non-existent group should throw an exception.");
-		assertTrue(exception.getMessage().contains("No group found to delete"),
-				"Exception message should indicate deletion failure.");
 	}
 }

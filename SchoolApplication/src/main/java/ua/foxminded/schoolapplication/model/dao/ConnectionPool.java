@@ -4,11 +4,12 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
 import ua.foxminded.schoolapplication.model.dao.exception.DAOException;
+import ua.foxminded.schoolapplication.util.PropertiesLoader;
+import ua.foxminded.schoolapplication.util.PropertiesLoadingException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Properties;
@@ -51,7 +52,7 @@ public class ConnectionPool {
 		logger.debug("Initializing HikariConfig for database connection pool.");
 
 		try {
-			Properties properties = loadProperties();
+			Properties properties = loadProperties(PROPERTIES_FILE);
 			HikariConfig config = new HikariConfig(properties);
 			logger.debug("HikariConfig initialized with settings: jdbcUrl={}, username={}, maxPoolSize={}, minIdle={}",
 					config.getJdbcUrl(),
@@ -61,28 +62,19 @@ public class ConnectionPool {
 
 			return config;
 		} catch (Exception e) {
-			logger.error("Failed to initialize HikariConfig", e);
-			throw new DAOException("Failed to initialize HikariConfig", e);
+			logger.error("HikariConfig : Failed to initialize HikariConfig", e);
+			throw new DAOException("HikariConfig : Failed to initialize HikariConfig", e);
 		}
 	}
 
-	private static Properties loadProperties() {
-		logger.debug("Loading properties from file: {}", PROPERTIES_FILE);
+	private static Properties loadProperties(String fileName) {
+		logger.debug("Loading properties from file: {}", fileName);
 
-		Properties properties = new Properties();
-		try (InputStream inputStream = ConnectionPool.class.getClassLoader().getResourceAsStream(PROPERTIES_FILE)) {
-			if (inputStream == null) {
-				logger.warn("Properties file not found: {}", PROPERTIES_FILE);
-				throw new DAOException("Properties file not found: " + PROPERTIES_FILE);
-			}
-
-			properties.load(inputStream);
-			logger.info("Properties loaded successfully from {}", PROPERTIES_FILE);
-
-			return properties;
-		} catch (Exception e) {
-			logger.error("Failed to load properties file: {}", PROPERTIES_FILE, e);
-			throw new DAOException("Failed to load properties file: " + PROPERTIES_FILE, e);
+		try {
+			return PropertiesLoader.loadProperties(fileName);
+		} catch (PropertiesLoadingException e) {
+			logger.error("HikariConfig : Failed to load properties file: {}", fileName, e);
+			throw new DAOException("HikariConfig : Failed to load properties file: " + fileName, e);
 		}
 	}
 }

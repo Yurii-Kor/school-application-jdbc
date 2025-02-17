@@ -5,8 +5,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ua.foxminded.schoolapplication.model.dao.exception.DAOException;
+import ua.foxminded.schoolapplication.util.PropertiesLoadingException;
+import ua.foxminded.schoolapplication.util.PropertiesLoader;
 
-import java.io.InputStream;
 import java.util.Properties;
 
 public class DaoInitializer {
@@ -34,26 +35,19 @@ public class DaoInitializer {
 			Properties properties = loadProperties(CONFIG_FILE);
 			return Flyway.configure().dataSource(ConnectionPool.getDataSource()).configuration(properties).load();
 		} catch (Exception e) {
-			logger.error("Failed to configure Flyway", e);
-			throw new DAOException("Failed to configure Flyway", e);
+			logger.error("Flyway : Failed to configure Flyway", e);
+			throw new DAOException("Flyway : Failed to configure Flyway", e);
 		}
 	}
 
 	private Properties loadProperties(String fileName) {
 		logger.debug("Loading properties from file: {}", fileName);
 
-		try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(fileName)) {
-			if (inputStream == null) {
-				throw new DAOException("Properties file not found: " + fileName);
-			}
-
-			Properties properties = new Properties();
-			properties.load(inputStream);
-			logger.debug("Properties loaded successfully from file: {}", fileName);
-			return properties;
-		} catch (Exception e) {
-			logger.error("Failed to load properties file: {}", fileName, e);
-			throw new DAOException("Failed to load properties file: " + fileName, e);
+		try {
+			return PropertiesLoader.loadProperties(fileName);
+		} catch (PropertiesLoadingException e) {
+			logger.error("Flyway : Failed to load properties file: {}", fileName, e);
+			throw new DAOException("Flyway : Failed to load properties file: " + fileName, e);
 		}
 	}
 }
