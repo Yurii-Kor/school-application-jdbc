@@ -58,7 +58,6 @@ class StudentValidatorTest {
 		Student student = new Student(DEFAULT_ID, DEFAULT_ID, validatedFirstName, validatedLastName);
 
 		boolean result = validator.validateStudents(student);
-
 		assertEquals(expected, result, "Validation result mismatch for student: " + student);
 	}
 }

@@ -3,7 +3,6 @@ package ua.foxminded.schoolapplication.model.dao;
 import org.junit.jupiter.api.*;
 
 import ua.foxminded.schoolapplication.model.dao.constants.NotFoundConstants;
-import ua.foxminded.schoolapplication.model.dao.exception.DAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.GroupIdDAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.ObjectNotFoundDAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.ValidationDAOException;
