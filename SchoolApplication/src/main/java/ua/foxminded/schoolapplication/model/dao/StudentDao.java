@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ua.foxminded.schoolapplication.model.dao.constants.DAOErrorCode;
+import ua.foxminded.schoolapplication.model.dao.constants.DBSchemaConstants;
 import ua.foxminded.schoolapplication.model.dao.constants.NotFoundConstants;
 import ua.foxminded.schoolapplication.model.dao.exception.DAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.ObjectNotFoundDAOException;
@@ -23,11 +24,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class StudentDao {
-	private static final String TABLE = "students";
-	private static final String COLUMN_STUDENT_ID = "student_id";
-	private static final String COLUMN_GROUP_ID = "group_id";
-	private static final String COLUMN_FIRST_NAME = "first_name";
-	private static final String COLUMN_LAST_NAME = "last_name";
+	private static final String TABLE = DBSchemaConstants.STUDENTS_TABLE.getValue();
+	private static final String COLUMN_STUDENT_ID = DBSchemaConstants.STUDENT_ID.getValue();
+	private static final String COLUMN_GROUP_ID = DBSchemaConstants.STUDENT_GROUP_ID.getValue();
+	private static final String COLUMN_FIRST_NAME = DBSchemaConstants.STUDENT_FIRST_NAME.getValue();
+	private static final String COLUMN_LAST_NAME = DBSchemaConstants.STUDENT_LAST_NAME.getValue();
 
 	private static final String INSERT_STUDENT = String.format("INSERT INTO %s (%s, %s, %s) VALUES (?, ?, ?)",
 			TABLE,

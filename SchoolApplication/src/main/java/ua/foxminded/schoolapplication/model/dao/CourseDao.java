@@ -3,6 +3,7 @@ package ua.foxminded.schoolapplication.model.dao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ua.foxminded.schoolapplication.model.dao.constants.DAOErrorCode;
+import ua.foxminded.schoolapplication.model.dao.constants.DBSchemaConstants;
 import ua.foxminded.schoolapplication.model.dao.constants.NotFoundConstants;
 import ua.foxminded.schoolapplication.model.dao.exception.DAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.ObjectNotFoundDAOException;
@@ -20,10 +21,10 @@ import java.sql.Statement;
 import java.util.Arrays;
 
 public class CourseDao {
-	private static final String TABLE = "courses";
-	private static final String COLUMN_COURSE_ID = "course_id";
-	private static final String COLUMN_COURSE_NAME = "course_name";
-	private static final String COLUMN_COURSE_DESCRIPTION = "course_description";
+	private static final String TABLE = DBSchemaConstants.COURSES_TABLE.getValue();
+	private static final String COLUMN_COURSE_ID = DBSchemaConstants.COURSE_ID.getValue();
+	private static final String COLUMN_COURSE_NAME = DBSchemaConstants.COURSE_NAME.getValue();
+	private static final String COLUMN_COURSE_DESCRIPTION = DBSchemaConstants.COURSE_DESCRIPTION.getValue();
 
 	private static final String INSERT_COURSE = String
 			.format("INSERT INTO %s (%s, %s) VALUES (?, ?)", TABLE, COLUMN_COURSE_NAME, COLUMN_COURSE_DESCRIPTION);

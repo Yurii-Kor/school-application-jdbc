@@ -44,7 +44,7 @@ class StudentDaoTest {
 	}
 
 	@AfterAll
-	void tearDown() {
+	void cleanUp() {
 		groupDao.deleteGroup(generatedGroupId);
 	}
 

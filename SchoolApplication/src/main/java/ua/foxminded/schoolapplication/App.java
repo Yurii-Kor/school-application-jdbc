@@ -75,7 +75,7 @@ public class App {
 		System.out.println("Updated student retrieved: " + updatedStudent);
 
 		// Step 9: Add a new course
-		Course course = new Course(0, "Mathematics", "Introduction to Mathematics");
+		Course course = new Course(0, "Maths", "Introduction to Mathematics");
 		try {
 			сourseDao.addCourses(course);
 			System.out.println("Added course: " + course);

@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ua.foxminded.schoolapplication.model.dao.constants.DAOErrorCode;
+import ua.foxminded.schoolapplication.model.dao.constants.DBSchemaConstants;
 import ua.foxminded.schoolapplication.model.dao.constants.NotFoundConstants;
 import ua.foxminded.schoolapplication.model.dao.exception.DAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.ObjectNotFoundDAOException;
@@ -21,9 +22,9 @@ import java.sql.Statement;
 import java.util.Arrays;
 
 public class GroupDao {
-	private static final String TABLE = "groups";
-	private static final String COLUMN_GROUP_ID = "group_id";
-	private static final String COLUMN_GROUP_NAME = "group_name";
+	private static final String TABLE = DBSchemaConstants.GROUPS_TABLE.getValue();
+	private static final String COLUMN_GROUP_ID = DBSchemaConstants.GROUP_ID.getValue();
+	private static final String COLUMN_GROUP_NAME = DBSchemaConstants.GROUP_NAME.getValue();
 
 	private static final String INSERT_GROUP = String
 			.format("INSERT INTO %s (%s) VALUES (?)", TABLE, COLUMN_GROUP_NAME);
