@@ -16,37 +16,30 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GroupStudentsDao {
-	private static final Logger logger = LoggerFactory.getLogger(GroupStudentsDao.class);
-
-	private static final String TABLE_GROUPS = DBSchemaConstants.GROUPS_TABLE.getValue();
-	private static final String GROUPS_PRIMARY_KEY = DBSchemaConstants.GROUP_ID.getValue();
-	private static final String GROUPS_SECONDARY_KEY = DBSchemaConstants.GROUP_NAME.getValue();
-
-	private static final String TABLE_STUDENTS = DBSchemaConstants.STUDENTS_TABLE.getValue();
-	private static final String STUDENTS_ID = DBSchemaConstants.STUDENT_ID.getValue();
-	private static final String STUDENTS_FOREIGN_KEY = DBSchemaConstants.STUDENT_GROUP_ID.getValue();
-	private static final String STUDENTS_FIRST_NAME = DBSchemaConstants.STUDENT_FIRST_NAME.getValue();
-	private static final String STUDENTS_LAST_NAME = DBSchemaConstants.STUDENT_LAST_NAME.getValue();
-
 	private static final String FIND_STUDENTS_BY_GROUP_NAME = String.format(
 			"SELECT s.* FROM %s s JOIN %s g ON s.%s = g.%s WHERE g.%s = ?",
 
-			TABLE_STUDENTS,
-			TABLE_GROUPS,
-			STUDENTS_FOREIGN_KEY,
-			GROUPS_PRIMARY_KEY,
-			GROUPS_SECONDARY_KEY);
+			DBSchemaConstants.STUDENTS_TABLE.getValue(),
+			DBSchemaConstants.GROUPS_TABLE.getValue(),
+			DBSchemaConstants.STUDENT_GROUP_ID.getValue(),
+			DBSchemaConstants.GROUP_ID.getValue(),
+			DBSchemaConstants.GROUP_NAME.getValue());
 
 	private static final String FIND_GROUPS_WITH_STUDENT_COUNT_LESS_OR_EQUAL = String.format(
 			"SELECT g.* FROM %s g LEFT JOIN %s s ON g.%s = s.%s GROUP BY g.%s, g.%s HAVING COUNT(s.%s) <= ?",
 
-			TABLE_GROUPS,
-			TABLE_STUDENTS,
-			GROUPS_PRIMARY_KEY,
-			STUDENTS_FOREIGN_KEY,
-			GROUPS_PRIMARY_KEY,
-			GROUPS_SECONDARY_KEY,
-			STUDENTS_ID);
+			DBSchemaConstants.GROUPS_TABLE.getValue(),
+			DBSchemaConstants.STUDENTS_TABLE.getValue(),
+			DBSchemaConstants.GROUP_ID.getValue(),
+			DBSchemaConstants.STUDENT_GROUP_ID.getValue(),
+			DBSchemaConstants.GROUP_ID.getValue(),
+			DBSchemaConstants.GROUP_NAME.getValue(),
+			DBSchemaConstants.STUDENT_ID.getValue());
+
+	private static final int FIND_STUDENTS_GROUP_NAME_POSITION = 1;
+	private static final int FIND_GROUPS_STUDENTS_AMOUNT_POSITION = 1;
+
+	private static final Logger logger = LoggerFactory.getLogger(GroupStudentsDao.class);
 
 	public List<Student> findStudentsByGroupName(String groupName) throws DAOException {
 		logger.debug("Searching for students in group with name: {}", groupName);
@@ -55,14 +48,14 @@ public class GroupStudentsDao {
 		try (Connection connection = ConnectionPool.getConnection();
 				PreparedStatement statement = connection.prepareStatement(FIND_STUDENTS_BY_GROUP_NAME)) {
 
-			statement.setString(1, groupName);
+			statement.setString(FIND_STUDENTS_GROUP_NAME_POSITION, groupName);
 
 			try (ResultSet resultSet = statement.executeQuery()) {
 				while (resultSet.next()) {
-					int studentId = resultSet.getInt(STUDENTS_ID);
-					int groupId = resultSet.getInt(STUDENTS_FOREIGN_KEY);
-					String firstName = resultSet.getString(STUDENTS_FIRST_NAME);
-					String lastName = resultSet.getString(STUDENTS_LAST_NAME);
+					Long studentId = resultSet.getLong(DBSchemaConstants.STUDENT_ID.getValue());
+					Long groupId = resultSet.getLong(DBSchemaConstants.STUDENT_GROUP_ID.getValue());
+					String firstName = resultSet.getString(DBSchemaConstants.STUDENT_FIRST_NAME.getValue());
+					String lastName = resultSet.getString(DBSchemaConstants.STUDENT_LAST_NAME.getValue());
 
 					students.add(new Student(studentId, groupId, firstName, lastName));
 				}
@@ -84,12 +77,12 @@ public class GroupStudentsDao {
 				PreparedStatement statement = connection
 						.prepareStatement(FIND_GROUPS_WITH_STUDENT_COUNT_LESS_OR_EQUAL)) {
 
-			statement.setInt(1, maxCount);
+			statement.setInt(FIND_GROUPS_STUDENTS_AMOUNT_POSITION, maxCount);
 
 			try (ResultSet resultSet = statement.executeQuery()) {
 				while (resultSet.next()) {
-					int groupId = resultSet.getInt(GROUPS_PRIMARY_KEY);
-					String groupName = resultSet.getString(GROUPS_SECONDARY_KEY);
+					Long groupId = resultSet.getLong(DBSchemaConstants.GROUP_ID.getValue());
+					String groupName = resultSet.getString(DBSchemaConstants.GROUP_NAME.getValue());
 
 					groups.add(new Group(groupId, groupName));
 				}

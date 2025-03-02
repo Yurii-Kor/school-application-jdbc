@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GroupStudentsDaoTest {
-	static final int DEFAULT_ID = 0;
+	static final Long DEFAULT_ID = 0L;
 	static final String[] GROUP_NAMES = new String[] { "TestGroup-11", "TestGroup-22", "TestGroup-33" };
 	static final String[] STUDENT_FIRST_NAMES = new String[] { "FirstNameA", "FirstNameB" };
 	static final String[] STUDENT_LAST_NAMES = new String[] { "LastNameA", "LastNameB" };
@@ -31,7 +31,6 @@ class GroupStudentsDaoTest {
 
 	@BeforeAll
 	void initDatabase() {
-		new DaoInitializer().initializeDatabase();
 		groupDao = new GroupDao();
 
 		noStudentsGroup = new Group(DEFAULT_ID, GROUP_NAMES[0]);

@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StudentsCoursesDaoTest {
-	static final int DEFAULT_ID = 0;
+	static final Long DEFAULT_ID = 0L;
 	static final String TEST_GROUP_NAME = "TestGroup-11";
 	static final String TEST_STUDENT_FIRST_NAME = "Student";
 	static final String TEST_STUDENT_LAST_NAME = "Relation";
@@ -25,14 +25,13 @@ class StudentsCoursesDaoTest {
 	CourseDao courseDao;
 	StudentsCoursesDao studentsCoursesDao;
 
-	int testGroupId;
+	Long testGroupId;
 
 	Student testStudent;
 	Course testCourse;
 
 	@BeforeAll
 	void initDatabase() {
-		new DaoInitializer().initializeDatabase();
 		groupDao = new GroupDao();
 		studentDao = new StudentDao();
 		courseDao = new CourseDao();
@@ -67,11 +66,11 @@ class StudentsCoursesDaoTest {
 	void addStudentCourseShouldAddRelationAndRetrieveIds() throws DAOException {
 		studentsCoursesDao.addStudentCourse(testStudent.getStudentId(), testCourse.getCourseId());
 
-		List<Integer> courseIds = studentsCoursesDao.findCourseIdsByStudentId(testStudent.getStudentId());
+		List<Long> courseIds = studentsCoursesDao.findCourseIdsByStudentId(testStudent.getStudentId());
 		assertTrue(courseIds.contains(testCourse.getCourseId()),
 				"findCourseIdsByStudentId should return the test course id");
 
-		List<Integer> studentIds = studentsCoursesDao.findStudentIdsByCourseId(testCourse.getCourseId());
+		List<Long> studentIds = studentsCoursesDao.findStudentIdsByCourseId(testCourse.getCourseId());
 		assertTrue(studentIds.contains(testStudent.getStudentId()),
 				"findStudentIdsByCourseId should return the test student id");
 

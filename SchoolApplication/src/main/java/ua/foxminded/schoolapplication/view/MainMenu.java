@@ -1,25 +1,21 @@
 package ua.foxminded.schoolapplication.view;
 
-import ua.foxminded.schoolapplication.model.dao.DaoInitializer;
 import ua.foxminded.schoolapplication.model.dao.ConnectionPool;
 import ua.foxminded.schoolapplication.model.dao.exception.DAOException;
 
 import java.util.Scanner;
 
 public class MainMenu {
-	private final DaoInitializer dbInitializer;
 	private final MenuActions menuActions;
 	private final Scanner scanner;
 
 	public MainMenu() {
-		this.dbInitializer = new DaoInitializer();
 		this.scanner = new Scanner(System.in);
 		this.menuActions = new MenuActions(scanner);
 	}
 
 	public void start() {
 		try {
-			dbInitializer.initializeDatabase();
 			System.out.println("Database initialized successfully.");
 
 			runMenu();

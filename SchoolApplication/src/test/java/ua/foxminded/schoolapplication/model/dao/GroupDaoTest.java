@@ -2,7 +2,6 @@ package ua.foxminded.schoolapplication.model.dao;
 
 import org.junit.jupiter.api.*;
 
-import ua.foxminded.schoolapplication.model.dao.constants.NotFoundConstants;
 import ua.foxminded.schoolapplication.model.dao.exception.GroupNameDAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.ObjectNotFoundDAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.ValidationDAOException;
@@ -12,20 +11,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GroupDaoTest {
-	static final int DEFAULT_GROUP_ID = 0;
-	static final int NON_EXISTENT_GROUP_ID = 999;
-	static final int NOT_FOUND_GROUP_ID = NotFoundConstants.NOT_FOUND.getId();
+	static final Long DEFAULT_GROUP_ID = 0L;
+	static final Long NON_EXISTENT_GROUP_ID = 999L;
 	static final String DEFAULT_GROUP_NAME = "TestGroup-11";
 	static final String UPDATED_GROUP_NAME = "NonExistentGroup-22";
 	static final String NON_EXISTENT_GROUP_NAME = "UpdatedGroup-33";
-	static final String NOT_FOUND_GROUP_NAME = NotFoundConstants.NOT_FOUND.getName();
-
 	GroupDao groupDao;
-
-	@BeforeAll
-	void initDatabase() {
-		new DaoInitializer().initializeDatabase();
-	}
 
 	@BeforeEach
 	void setUp() {
@@ -74,14 +65,10 @@ class GroupDaoTest {
 	}
 
 	@Test
-	void findGroupByIdShouldReturnNotFoundWhenGroupDoesNotExist() {
-		Group resultGroup = groupDao.findGroupById(NON_EXISTENT_GROUP_ID);
-		assertEquals(NOT_FOUND_GROUP_ID,
-				resultGroup.getGroupId(),
-				"Non-existent group ID should match NOT_FOUND constant.");
-		assertEquals(NOT_FOUND_GROUP_NAME,
-				resultGroup.getGroupName(),
-				"Non-existent group name should match NOT_FOUND constant.");
+	void findGroupByIdShouldThrowExceptionWhenGroupDoesNotExist() {
+		assertThrows(ObjectNotFoundDAOException.class,
+				() -> groupDao.findGroupById(NON_EXISTENT_GROUP_ID),
+				"Looking for a non-existent group should throw an exception.");
 	}
 
 	@Test

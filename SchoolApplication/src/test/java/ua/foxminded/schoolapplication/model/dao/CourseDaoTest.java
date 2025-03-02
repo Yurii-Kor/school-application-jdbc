@@ -1,7 +1,6 @@
 package ua.foxminded.schoolapplication.model.dao;
 
 import org.junit.jupiter.api.*;
-import ua.foxminded.schoolapplication.model.dao.constants.NotFoundConstants;
 import ua.foxminded.schoolapplication.model.dao.exception.CourseNameDAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.ObjectNotFoundDAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.ValidationDAOException;
@@ -11,22 +10,15 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CourseDaoTest {
-	static final int DEFAULT_COURSE_ID = 0;
-	static final int NON_EXISTENT_COURSE_ID = 999;
-	static final int NOT_FOUND_COURSE_ID = NotFoundConstants.NOT_FOUND.getId();
+	static final Long DEFAULT_COURSE_ID = 0L;
+	static final Long NON_EXISTENT_COURSE_ID = 999L;
 	static final String DEFAULT_COURSE_NAME = "Introduction to Mathematics";
 	static final String DEFAULT_COURSE_DESCRIPTION = "Basic concepts of mathematics.";
 	static final String UPDATED_COURSE_NAME = "Advanced Mathematics";
 	static final String UPDATED_COURSE_DESCRIPTION = "In-depth study of advanced math topics.";
 	static final String NON_EXISTENT_COURSE_NAME = "NonExistentCourse";
-	static final String NOT_FOUND_COURSE_NAME = NotFoundConstants.NOT_FOUND.getName();
 
 	private CourseDao courseDao;
-
-	@BeforeAll
-	void initDatabase() {
-		new DaoInitializer().initializeDatabase();
-	}
 
 	@BeforeEach
 	void setUp() {
@@ -78,14 +70,10 @@ class CourseDaoTest {
 	}
 
 	@Test
-	void findCourseByIdShouldReturnNotFoundWhenCourseDoesNotExist() {
-		Course resultCourse = courseDao.findCourseById(NON_EXISTENT_COURSE_ID);
-		assertEquals(NOT_FOUND_COURSE_ID,
-				resultCourse.getCourseId(),
-				"Non-existent course ID should match NOT_FOUND constant.");
-		assertEquals(NOT_FOUND_COURSE_NAME,
-				resultCourse.getCourseName(),
-				"Non-existent course name should match NOT_FOUND constant.");
+	void findCourseByIdShouldThrowExceptionWhenCourseDoesNotExist() {
+		assertThrows(ObjectNotFoundDAOException.class,
+				() -> courseDao.findCourseById(NON_EXISTENT_COURSE_ID),
+				"Looking for a non-existent course should throw an exception.");
 	}
 
 	@Test

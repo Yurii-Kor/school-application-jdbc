@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 
 import ua.foxminded.schoolapplication.model.dao.constants.DAOErrorCode;
 import ua.foxminded.schoolapplication.model.dao.constants.DBSchemaConstants;
-import ua.foxminded.schoolapplication.model.dao.constants.NotFoundConstants;
 import ua.foxminded.schoolapplication.model.dao.exception.DAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.ObjectNotFoundDAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.ValidationDAOException;
@@ -22,20 +21,22 @@ import java.sql.Statement;
 import java.util.Arrays;
 
 public class GroupDao {
-	private static final String TABLE = DBSchemaConstants.GROUPS_TABLE.getValue();
-	private static final String COLUMN_GROUP_ID = DBSchemaConstants.GROUP_ID.getValue();
-	private static final String COLUMN_GROUP_NAME = DBSchemaConstants.GROUP_NAME.getValue();
+	private static final String INSERT_GROUP = String.format("INSERT INTO %s (%s) VALUES (?)",
+			DBSchemaConstants.GROUPS_TABLE.getValue(),
+			DBSchemaConstants.GROUP_NAME.getValue());
 
-	private static final String INSERT_GROUP = String
-			.format("INSERT INTO %s (%s) VALUES (?)", TABLE, COLUMN_GROUP_NAME);
+	private static final String FIND_GROUP_BY_ID = String.format("SELECT * FROM %s WHERE %s = ?",
+			DBSchemaConstants.GROUPS_TABLE.getValue(),
+			DBSchemaConstants.GROUP_ID.getValue());
 
-	private static final String FIND_GROUP_BY_ID = String
-			.format("SELECT * FROM %s WHERE %s = ?", TABLE, COLUMN_GROUP_ID);
+	private static final String UPDATE_GROUP = String.format("UPDATE %s SET %s = ? WHERE %s = ?",
+			DBSchemaConstants.GROUPS_TABLE.getValue(),
+			DBSchemaConstants.GROUP_NAME.getValue(),
+			DBSchemaConstants.GROUP_ID.getValue());
 
-	private static final String UPDATE_GROUP = String
-			.format("UPDATE %s SET %s = ? WHERE %s = ?", TABLE, COLUMN_GROUP_NAME, COLUMN_GROUP_ID);
-
-	private static final String DELETE_GROUP = String.format("DELETE FROM %s WHERE %s = ?", TABLE, COLUMN_GROUP_ID);
+	private static final String DELETE_GROUP = String.format("DELETE FROM %s WHERE %s = ?",
+			DBSchemaConstants.GROUPS_TABLE.getValue(),
+			DBSchemaConstants.GROUP_ID.getValue());
 
 	private static final int INSERT_GROUP_NAME_POSITION = 1;
 	private static final int INSERT_RETRIVED_ID_POSITION = 1;
@@ -43,12 +44,6 @@ public class GroupDao {
 	private static final int UPDATE_GROUP_NAME_POSITION = 1;
 	private static final int UPDATE_GROUP_ID_POSITION = 2;
 	private static final int DELETE_GROUP_ID_POSITION = 1;
-
-	private static final int NOT_FOUND_ID = NotFoundConstants.NOT_FOUND.getId();
-	private static final String NOT_FOUND_GROUP_NAME = NotFoundConstants.NOT_FOUND.getName();
-	private static final String SQL_STATE_UNIQUE_VIOLATION = DAOErrorCode.UNIQUE_VIOLATION.getCode();
-	private static final String SQL_STATE_FOREIGN_KEY_VIOLATION = DAOErrorCode.FOREIGN_KEY_VIOLATION.getCode();
-	private static final String SQL_STATE_NULL_CONSTRAINT_VIOLATION = DAOErrorCode.NULL_CONSTRAINT_VIOLATION.getCode();
 
 	private static final Logger logger = LoggerFactory.getLogger(GroupDao.class);
 
@@ -68,80 +63,76 @@ public class GroupDao {
 
 			connection.setAutoCommit(false);
 
-			try {
-				for (Group group : groups) {
-					statement.setString(INSERT_GROUP_NAME_POSITION, group.getGroupName());
-					statement.addBatch();
-				}
+			for (Group group : groups) {
+				statement.setString(INSERT_GROUP_NAME_POSITION, group.getGroupName());
+				statement.addBatch();
+			}
 
+			try {
 				statement.executeBatch();
 				logger.debug("addGroups : Batch executed");
-
-				try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-					int index = 0;
-					while (generatedKeys.next() && index < groups.length) {
-						int generatedId = generatedKeys.getInt(INSERT_RETRIVED_ID_POSITION);
-						groups[index].setGroupId(generatedId);
-						index++;
-					}
-
-					if (index != groups.length) {
-						logger.warn("addGroups : Number of generated keys exceeds number of inserted groups.");
-						throw new GroupNameDAOException("Number of generated keys exceeds number of inserted groups.");
-					}
-				}
-
-				connection.commit();
-				logger.info("All groups added successfully.");
 			} catch (SQLException e) {
-				try {
-					connection.rollback();
-					logger.debug("Transaction rolled back due to SQLException during 'addGroups'.");
-				} catch (SQLException rollbackEx) {
-					logger.error("Failed to rollback transaction during 'addGroups'.", rollbackEx);
-				}
-
-				if (e instanceof java.sql.BatchUpdateException && e.getNextException() != null) {
-					e = e.getNextException();
-				}
-
-				if (SQL_STATE_UNIQUE_VIOLATION.equals(e.getSQLState())) {
-					logger.warn("addGroups : Unique constraint violated for group_name during 'addGroups'.", e);
-					throw new GroupNameDAOException("A group with the same name already exists.", e);
-				}
-
-				if (SQL_STATE_NULL_CONSTRAINT_VIOLATION.equals(e.getSQLState())) {
-					logger.warn("addGroups : A required field is missing (NULL constraint violation)", e);
-					throw new ValidationDAOException("A required field is missing (NULL constraint violation)", e);
-				}
-
-				logger.error("Failed to add groups: {}", e.getMessage(), e);
-				throw new DAOException("Failed to add groups.", e);
+				connection.rollback();
+				logger.debug("Transaction rolled back due to SQLException during 'addGroups'.");
+				throw e;
 			}
+
+			try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+				int index = 0;
+				while (generatedKeys.next() && index < groups.length) {
+					Long generatedId = generatedKeys.getLong(INSERT_RETRIVED_ID_POSITION);
+					groups[index].setGroupId(generatedId);
+					index++;
+				}
+
+				if (index != groups.length) {
+					connection.rollback();
+					logger.warn("addGroups : Number of generated keys exceeds number of inserted groups.");
+					throw new GroupNameDAOException("Number of generated keys exceeds number of inserted groups.");
+				}
+			}
+
+			connection.commit();
+			logger.info("All groups added successfully.");
 		} catch (SQLException e) {
-			logger.error("Failed to establish connection or prepare statement.", e);
-			throw new DAOException("Failed to add groups due to connection issues.", e);
+			if (e instanceof java.sql.BatchUpdateException && e.getNextException() != null) {
+				e = e.getNextException();
+			}
+
+			if (DAOErrorCode.UNIQUE_VIOLATION.getCode().equals(e.getSQLState())) {
+				logger.warn("addGroups : Unique constraint violated for group_name during 'addGroups'.", e);
+				throw new GroupNameDAOException("A group with the same name already exists.", e);
+			}
+
+			if (DAOErrorCode.NULL_CONSTRAINT_VIOLATION.getCode().equals(e.getSQLState())) {
+				logger.warn("addGroups : A required field is missing (NULL constraint violation)", e);
+				throw new ValidationDAOException("A required field is missing (NULL constraint violation)", e);
+			}
+
+			logger.error("Failed to add groups: {}", e.getMessage(), e);
+			throw new DAOException("Failed to add groups.", e);
 		}
 	}
 
-	public Group findGroupById(int groupId) throws DAOException {
+	public Group findGroupById(Long groupId) throws DAOException {
 		logger.debug("Searching for group with ID: {}", groupId);
 
 		try (Connection connection = ConnectionPool.getConnection();
 				PreparedStatement statement = connection.prepareStatement(FIND_GROUP_BY_ID)) {
 
-			statement.setInt(FIND_GROUP_BY_ID_POSITION, groupId);
+			statement.setLong(FIND_GROUP_BY_ID_POSITION, groupId);
 
 			try (ResultSet resultSet = statement.executeQuery()) {
 				if (resultSet.next()) {
-					Group group = new Group(resultSet.getInt(COLUMN_GROUP_ID), resultSet.getString(COLUMN_GROUP_NAME));
+					Group group = new Group(resultSet.getLong(DBSchemaConstants.GROUP_ID.getValue()),
+							resultSet.getString(DBSchemaConstants.GROUP_NAME.getValue()));
 					logger.info("Group found: {}", group);
 					return group;
 				}
 			}
 
 			logger.info("Group with ID {} not found.", groupId);
-			return new Group(NOT_FOUND_ID, NOT_FOUND_GROUP_NAME);
+			throw new ObjectNotFoundDAOException("No group found with ID: " + groupId);
 		} catch (SQLException e) {
 			logger.error("Error finding group by ID: {}", groupId, e);
 			throw new DAOException("Failed to find group by ID", e);
@@ -156,7 +147,7 @@ public class GroupDao {
 				PreparedStatement statement = connection.prepareStatement(UPDATE_GROUP)) {
 
 			statement.setString(UPDATE_GROUP_NAME_POSITION, group.getGroupName());
-			statement.setInt(UPDATE_GROUP_ID_POSITION, group.getGroupId());
+			statement.setLong(UPDATE_GROUP_ID_POSITION, group.getGroupId());
 
 			int rowsAffected = statement.executeUpdate();
 			if (rowsAffected == 0) {
@@ -166,12 +157,12 @@ public class GroupDao {
 
 			logger.info("Group updated successfully: {}", group);
 		} catch (SQLException e) {
-			if (SQL_STATE_UNIQUE_VIOLATION.equals(e.getSQLState())) {
+			if (DAOErrorCode.UNIQUE_VIOLATION.getCode().equals(e.getSQLState())) {
 				logger.warn("updateGroup : Unique constraint violated for group_name during 'addGroups'.", e);
 				throw new GroupNameDAOException("A group with the same name already exists.", e);
 			}
 
-			if (SQL_STATE_NULL_CONSTRAINT_VIOLATION.equals(e.getSQLState())) {
+			if (DAOErrorCode.NULL_CONSTRAINT_VIOLATION.getCode().equals(e.getSQLState())) {
 				logger.warn("updateGroup : A required field is missing (NULL constraint violation)", e);
 				throw new ValidationDAOException("A required field is missing (NULL constraint violation)", e);
 			}
@@ -181,13 +172,13 @@ public class GroupDao {
 		}
 	}
 
-	public void deleteGroup(int groupId) throws DAOException {
+	public void deleteGroup(Long groupId) throws DAOException {
 		logger.debug("Attempting to delete group with ID: {}", groupId);
 
 		try (Connection connection = ConnectionPool.getConnection();
 				PreparedStatement statement = connection.prepareStatement(DELETE_GROUP)) {
 
-			statement.setInt(DELETE_GROUP_ID_POSITION, groupId);
+			statement.setLong(DELETE_GROUP_ID_POSITION, groupId);
 
 			int rowsAffected = statement.executeUpdate();
 			if (rowsAffected == 0) {
@@ -197,7 +188,7 @@ public class GroupDao {
 
 			logger.info("Group deleted successfully with ID: {}", groupId);
 		} catch (SQLException e) {
-			if (SQL_STATE_FOREIGN_KEY_VIOLATION.equals(e.getSQLState())) {
+			if (DAOErrorCode.UNIQUE_VIOLATION.getCode().equals(e.getSQLState())) {
 				logger.warn("Cannot delete group with ID {} because it has dependent students", groupId, e);
 				throw new GroupIdDAOException("Group cannot be deleted because it has associated students", e);
 			}

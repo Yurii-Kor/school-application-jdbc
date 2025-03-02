@@ -8,6 +8,8 @@ import ua.foxminded.schoolapplication.model.domain.Group;
 import static org.junit.jupiter.api.Assertions.*;
 
 class GroupValidatorTest {
+	static final Long DEFAULT_ID = 1L;
+
 	static final String VALID_GROUP_NAME_SIMPLE = "AB-12";
 	static final String VALID_GROUP_NAME_LONG = "Mathematics-101";
 
@@ -39,9 +41,9 @@ class GroupValidatorTest {
 	void validate_GroupName_ShouldReturnExpectedResult(String groupName, boolean expected) {
 		Group testedGroup;
 		if (INVALID_GROUP_NAME_NULL.equals(groupName)) {
-			testedGroup = new Group(1, null);
+			testedGroup = new Group(DEFAULT_ID, null);
 		} else {
-			testedGroup = new Group(1, groupName);
+			testedGroup = new Group(DEFAULT_ID, groupName);
 		}
 
 		boolean result = validator.validateGroups(testedGroup);

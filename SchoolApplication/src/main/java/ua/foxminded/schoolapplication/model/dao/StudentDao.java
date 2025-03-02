@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 
 import ua.foxminded.schoolapplication.model.dao.constants.DAOErrorCode;
 import ua.foxminded.schoolapplication.model.dao.constants.DBSchemaConstants;
-import ua.foxminded.schoolapplication.model.dao.constants.NotFoundConstants;
 import ua.foxminded.schoolapplication.model.dao.exception.DAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.ObjectNotFoundDAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.ValidationDAOException;
@@ -24,32 +23,30 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class StudentDao {
-	private static final String TABLE = DBSchemaConstants.STUDENTS_TABLE.getValue();
-	private static final String COLUMN_STUDENT_ID = DBSchemaConstants.STUDENT_ID.getValue();
-	private static final String COLUMN_GROUP_ID = DBSchemaConstants.STUDENT_GROUP_ID.getValue();
-	private static final String COLUMN_FIRST_NAME = DBSchemaConstants.STUDENT_FIRST_NAME.getValue();
-	private static final String COLUMN_LAST_NAME = DBSchemaConstants.STUDENT_LAST_NAME.getValue();
-
 	private static final String INSERT_STUDENT = String.format("INSERT INTO %s (%s, %s, %s) VALUES (?, ?, ?)",
-			TABLE,
-			COLUMN_GROUP_ID,
-			COLUMN_FIRST_NAME,
-			COLUMN_LAST_NAME);
+			DBSchemaConstants.STUDENTS_TABLE.getValue(),
+			DBSchemaConstants.STUDENT_GROUP_ID.getValue(),
+			DBSchemaConstants.STUDENT_FIRST_NAME.getValue(),
+			DBSchemaConstants.STUDENT_LAST_NAME.getValue());
 
-	private static final String FIND_STUDENT_BY_ID = String
-			.format("SELECT * FROM %s WHERE %s = ?", TABLE, COLUMN_STUDENT_ID);
+	private static final String FIND_STUDENT_BY_ID = String.format("SELECT * FROM %s WHERE %s = ?",
+			DBSchemaConstants.STUDENTS_TABLE.getValue(),
+			DBSchemaConstants.STUDENT_ID.getValue());
 
-	private static final String FIND_STUDENTS_BY_GROUP_ID = String
-			.format("SELECT * FROM %s WHERE %s = ?", TABLE, COLUMN_GROUP_ID);
+	private static final String FIND_STUDENTS_BY_GROUP_ID = String.format("SELECT * FROM %s WHERE %s = ?",
+			DBSchemaConstants.STUDENTS_TABLE.getValue(),
+			DBSchemaConstants.STUDENT_GROUP_ID.getValue());
 
 	private static final String UPDATE_STUDENT = String.format("UPDATE %s SET %s = ?, %s = ?, %s = ? WHERE %s = ?",
-			TABLE,
-			COLUMN_GROUP_ID,
-			COLUMN_FIRST_NAME,
-			COLUMN_LAST_NAME,
-			COLUMN_STUDENT_ID);
+			DBSchemaConstants.STUDENTS_TABLE.getValue(),
+			DBSchemaConstants.STUDENT_GROUP_ID.getValue(),
+			DBSchemaConstants.STUDENT_FIRST_NAME.getValue(),
+			DBSchemaConstants.STUDENT_LAST_NAME.getValue(),
+			DBSchemaConstants.STUDENT_ID.getValue());
 
-	private static final String DELETE_STUDENT = String.format("DELETE FROM %s WHERE %s = ?", TABLE, COLUMN_STUDENT_ID);
+	private static final String DELETE_STUDENT = String.format("DELETE FROM %s WHERE %s = ?",
+			DBSchemaConstants.STUDENTS_TABLE.getValue(),
+			DBSchemaConstants.STUDENT_ID.getValue());
 
 	private static final int INSERT_GROUP_ID_POSITION = 1;
 	private static final int INSERT_FIRST_NAME_POSITION = 2;
@@ -62,11 +59,6 @@ public class StudentDao {
 	private static final int UPDATE_LAST_NAME_POSITION = 3;
 	private static final int UPDATE_STUDENT_ID_POSITION = 4;
 	private static final int DELETE_STUDENT_ID_POSITION = 1;
-
-	private static final int NOT_FOUND_ID = NotFoundConstants.NOT_FOUND.getId();
-	private static final String NOT_FOUND_NAME = NotFoundConstants.NOT_FOUND.getName();
-	private static final String SQL_STATE_FOREIGN_KEY_VIOLATION = DAOErrorCode.FOREIGN_KEY_VIOLATION.getCode();
-	private static final String SQL_STATE_NULL_CONSTRAINT_VIOLATION = DAOErrorCode.NULL_CONSTRAINT_VIOLATION.getCode();
 
 	private static final Logger logger = LoggerFactory.getLogger(StudentDao.class);
 
@@ -86,79 +78,73 @@ public class StudentDao {
 
 			connection.setAutoCommit(false);
 
-			try {
-				for (Student student : students) {
-					statement.setInt(INSERT_GROUP_ID_POSITION, student.getGroupId());
-					statement.setString(INSERT_FIRST_NAME_POSITION, student.getFirstName());
-					statement.setString(INSERT_LAST_NAME_POSITION, student.getLastName());
-					statement.addBatch();
-				}
+			for (Student student : students) {
+				statement.setLong(INSERT_GROUP_ID_POSITION, student.getGroupId());
+				statement.setString(INSERT_FIRST_NAME_POSITION, student.getFirstName());
+				statement.setString(INSERT_LAST_NAME_POSITION, student.getLastName());
+				statement.addBatch();
+			}
 
+			try {
 				statement.executeBatch();
 				logger.debug("addStudents: Batch executed");
-
-				try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-					int index = 0;
-					while (generatedKeys.next() && index < students.length) {
-						int generatedId = generatedKeys.getInt(INSERT_RETRIVED_ID_POSITION);
-						students[index].setStudentId(generatedId);
-						index++;
-					}
-
-					if (index != students.length) {
-						logger.warn(
-								"addStudents : Number of generated keys does not match number of inserted students.");
-						throw new GroupIdDAOException(
-								"Number of generated keys does not match number of inserted students.");
-					}
-				}
-
-				connection.commit();
-				logger.info("All students added successfully.");
 			} catch (SQLException e) {
-				try {
-					connection.rollback();
-					logger.debug("Transaction rolled back due to SQLException during 'addStudents'.");
-				} catch (SQLException rollbackEx) {
-					logger.error("Failed to rollback transaction during 'addStudents'.", rollbackEx);
-				}
-
-				if (e instanceof BatchUpdateException && e.getNextException() != null) {
-					e = e.getNextException();
-				}
-
-				if (SQL_STATE_FOREIGN_KEY_VIOLATION.equals(e.getSQLState())) {
-					logger.warn("Foreign key violation: Invalid group_id specified during 'addStudents'.", e);
-					throw new GroupIdDAOException("Invalid group id specified for student.", e);
-				}
-
-				if (SQL_STATE_NULL_CONSTRAINT_VIOLATION.equals(e.getSQLState())) {
-					logger.warn("addStudents : A required field is missing (NULL constraint violation)", e);
-					throw new ValidationDAOException("A required field is missing (NULL constraint violation)", e);
-				}
-
-				logger.error("Failed to add students: {}", e.getMessage(), e);
-				throw new DAOException("Failed to add students.", e);
+				connection.rollback();
+				logger.debug("Transaction rolled back due to SQLException during 'addStudents'.");
+				throw e;
 			}
+
+			try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+				int index = 0;
+				while (generatedKeys.next() && index < students.length) {
+					Long generatedId = generatedKeys.getLong(INSERT_RETRIVED_ID_POSITION);
+					students[index].setStudentId(generatedId);
+					index++;
+				}
+
+				if (index != students.length) {
+					connection.rollback();
+					logger.warn("addStudents : Number of generated keys does not match number of inserted students.");
+					throw new GroupIdDAOException(
+							"Number of generated keys does not match number of inserted students.");
+				}
+			}
+
+			connection.commit();
+			logger.info("All students added successfully.");
 		} catch (SQLException e) {
-			logger.error("Failed to establish connection or prepare statement.", e);
-			throw new DAOException("Failed to add students due to connection issues.", e);
+			if (e instanceof BatchUpdateException && e.getNextException() != null) {
+				e = e.getNextException();
+			}
+
+			if (DAOErrorCode.FOREIGN_KEY_VIOLATION.getCode().equals(e.getSQLState())) {
+				logger.warn("Foreign key violation: Invalid group_id specified during 'addStudents'.", e);
+				throw new GroupIdDAOException("Invalid group id specified for student.", e);
+			}
+
+			if (DAOErrorCode.NULL_CONSTRAINT_VIOLATION.getCode().equals(e.getSQLState())) {
+				logger.warn("addStudents : A required field is missing (NULL constraint violation)", e);
+				throw new ValidationDAOException("A required field is missing (NULL constraint violation)", e);
+			}
+
+			logger.error("Failed to add students: {}", e.getMessage(), e);
+			throw new DAOException("Failed to add students.", e);
 		}
 	}
 
-	public Student findStudentById(int studentId) throws DAOException {
+	public Student findStudentById(Long studentId) throws DAOException {
 		logger.debug("Searching for student with ID: {}", studentId);
 
 		try (Connection connection = ConnectionPool.getConnection();
 				PreparedStatement statement = connection.prepareStatement(FIND_STUDENT_BY_ID)) {
 
-			statement.setInt(FIND_STUDENT_ID_POSITION, studentId);
+			statement.setLong(FIND_STUDENT_ID_POSITION, studentId);
 
 			try (ResultSet resultSet = statement.executeQuery()) {
 				if (resultSet.next()) {
-					int groupId = resultSet.getInt(COLUMN_GROUP_ID);
-					String firstName = resultSet.getString(COLUMN_FIRST_NAME);
-					String lastName = resultSet.getString(COLUMN_LAST_NAME);
+					Long groupId = resultSet.getLong(DBSchemaConstants.STUDENT_GROUP_ID.getValue());
+					String firstName = resultSet.getString(DBSchemaConstants.STUDENT_FIRST_NAME.getValue());
+					String lastName = resultSet.getString(DBSchemaConstants.STUDENT_LAST_NAME.getValue());
 
 					Student student = new Student(studentId, groupId, firstName, lastName);
 					logger.info("Student found: {}", student);
@@ -167,14 +153,14 @@ public class StudentDao {
 			}
 
 			logger.info("Student with ID {} not found.", studentId);
-			return new Student(NOT_FOUND_ID, NOT_FOUND_ID, NOT_FOUND_NAME, NOT_FOUND_NAME);
+			throw new ObjectNotFoundDAOException("No student found with ID: " + studentId);
 		} catch (SQLException e) {
 			logger.error("Error finding student by ID: {}", studentId, e);
 			throw new DAOException("Failed to find student by ID", e);
 		}
 	}
 
-	public List<Student> findStudentsByGroupId(int groupId) throws DAOException {
+	public List<Student> findStudentsByGroupId(Long groupId) throws DAOException {
 		logger.debug("Searching for students with group_id: {}", groupId);
 
 		List<Student> students = new ArrayList<>();
@@ -182,14 +168,14 @@ public class StudentDao {
 		try (Connection connection = ConnectionPool.getConnection();
 				PreparedStatement statement = connection.prepareStatement(FIND_STUDENTS_BY_GROUP_ID)) {
 
-			statement.setInt(FIND_GROUP_ID_POSITION, groupId);
+			statement.setLong(FIND_GROUP_ID_POSITION, groupId);
 
 			try (ResultSet resultSet = statement.executeQuery()) {
 				while (resultSet.next()) {
-					int studentId = resultSet.getInt(COLUMN_STUDENT_ID);
-					int groupIdFromDB = resultSet.getInt(COLUMN_GROUP_ID);
-					String firstName = resultSet.getString(COLUMN_FIRST_NAME);
-					String lastName = resultSet.getString(COLUMN_LAST_NAME);
+					Long studentId = resultSet.getLong(DBSchemaConstants.STUDENT_ID.getValue());
+					Long groupIdFromDB = resultSet.getLong(DBSchemaConstants.STUDENT_GROUP_ID.getValue());
+					String firstName = resultSet.getString(DBSchemaConstants.STUDENT_FIRST_NAME.getValue());
+					String lastName = resultSet.getString(DBSchemaConstants.STUDENT_LAST_NAME.getValue());
 
 					Student student = new Student(studentId, groupIdFromDB, firstName, lastName);
 					students.add(student);
@@ -211,10 +197,10 @@ public class StudentDao {
 		try (Connection connection = ConnectionPool.getConnection();
 				PreparedStatement statement = connection.prepareStatement(UPDATE_STUDENT)) {
 
-			statement.setInt(UPDATE_GROUP_ID_POSITION, student.getGroupId());
+			statement.setLong(UPDATE_GROUP_ID_POSITION, student.getGroupId());
 			statement.setString(UPDATE_FIRST_NAME_POSITION, student.getFirstName());
 			statement.setString(UPDATE_LAST_NAME_POSITION, student.getLastName());
-			statement.setInt(UPDATE_STUDENT_ID_POSITION, student.getStudentId());
+			statement.setLong(UPDATE_STUDENT_ID_POSITION, student.getStudentId());
 
 			int rowsAffected = statement.executeUpdate();
 			if (rowsAffected == 0) {
@@ -225,12 +211,12 @@ public class StudentDao {
 			logger.info("Student updated successfully: {}", student);
 
 		} catch (SQLException e) {
-			if (SQL_STATE_FOREIGN_KEY_VIOLATION.equals(e.getSQLState())) {
+			if (DAOErrorCode.FOREIGN_KEY_VIOLATION.getCode().equals(e.getSQLState())) {
 				logger.warn("Foreign key violation: Invalid group_id specified during 'updateStudent'", e);
 				throw new GroupIdDAOException("Invalid group id specified for student.", e);
 			}
 
-			if (SQL_STATE_NULL_CONSTRAINT_VIOLATION.equals(e.getSQLState())) {
+			if (DAOErrorCode.NULL_CONSTRAINT_VIOLATION.getCode().equals(e.getSQLState())) {
 				logger.warn("updateStudent : A required field is missing (NULL constraint violation)", e);
 				throw new ValidationDAOException("A required field is missing (NULL constraint violation)", e);
 			}
@@ -240,12 +226,12 @@ public class StudentDao {
 		}
 	}
 
-	public void deleteStudent(int studentId) throws DAOException {
+	public void deleteStudent(Long studentId) throws DAOException {
 		logger.debug("Attempting to delete student with ID: {}", studentId);
 
 		try (Connection connection = ConnectionPool.getConnection();
 				PreparedStatement statement = connection.prepareStatement(DELETE_STUDENT)) {
-			statement.setInt(DELETE_STUDENT_ID_POSITION, studentId);
+			statement.setLong(DELETE_STUDENT_ID_POSITION, studentId);
 
 			int rowsAffected = statement.executeUpdate();
 			if (rowsAffected == 0) {

@@ -9,27 +9,27 @@ DROP SEQUENCE IF EXISTS course_id_seq;
 
 CREATE SEQUENCE group_id_seq START 100;
 CREATE TABLE groups (
-    group_id INT PRIMARY KEY DEFAULT nextval('group_id_seq'),
+    group_id BIGINT PRIMARY KEY DEFAULT nextval('group_id_seq'),
     group_name VARCHAR(255) NOT NULL UNIQUE
 );
 
 CREATE SEQUENCE student_id_seq START 1000;
 CREATE TABLE students (
-    student_id INT PRIMARY KEY DEFAULT nextval('student_id_seq'),
-    group_id INT REFERENCES groups(group_id) NOT NULL,
+    student_id BIGINT PRIMARY KEY DEFAULT nextval('student_id_seq'),
+    group_id BIGINT REFERENCES groups(group_id) NOT NULL,
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL
 );
 
 CREATE SEQUENCE course_id_seq START 10;
 CREATE TABLE courses (
-    course_id INT PRIMARY KEY DEFAULT nextval('course_id_seq'),
+    course_id BIGINT PRIMARY KEY DEFAULT nextval('course_id_seq'),
     course_name VARCHAR(255) NOT NULL UNIQUE,
     course_description TEXT
 );
 
 CREATE TABLE students_courses (
-    student_id INT REFERENCES students(student_id) ON DELETE CASCADE,
-    course_id INT REFERENCES courses(course_id) ON DELETE CASCADE,
+    student_id BIGINT REFERENCES students(student_id) ON DELETE CASCADE,
+    course_id BIGINT REFERENCES courses(course_id) ON DELETE CASCADE,
     PRIMARY KEY (student_id, course_id)
 );

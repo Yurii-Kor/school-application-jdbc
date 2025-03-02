@@ -2,8 +2,7 @@ package ua.foxminded.schoolapplication.model.dao;
 
 import org.junit.jupiter.api.*;
 
-import ua.foxminded.schoolapplication.model.dao.constants.NotFoundConstants;
-import ua.foxminded.schoolapplication.model.dao.exception.GroupIdDAOException;
+import ua.foxminded.schoolapplication.model.dao.exception.DAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.ObjectNotFoundDAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.ValidationDAOException;
 import ua.foxminded.schoolapplication.model.domain.Group;
@@ -15,15 +14,15 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StudentDaoTest {
-	static final int DEFAULT_ID = 0;
-	static final int NON_EXISTENT_ID = 999;
+	static final Long DEFAULT_ID = 0L;
+	static final Long NON_EXISTENT_ID = 999L;
 	static final String DEFAULT_GROUP_NAME = "TestGroup-11";
 	static final String DEFAULT_STUDENT_FIRST_NAME = "FirstName";
 	static final String ADDITIONAL_STUDENT_FIRST_NAME = "AdditionalFirstName";
 	static final String DEFAULT_STUDENT_LAST_NAME = "LastName";
 	static final String ADDITIONAL_STUDENT_LAST_NAME = "AdditionalLastName";
 
-	int generatedGroupId = DEFAULT_ID;
+	Long generatedGroupId = DEFAULT_ID;
 	StudentDao studentDao;
 	GroupDao groupDao;
 
@@ -31,7 +30,6 @@ class StudentDaoTest {
 	void initDatabase() {
 		Group testGroup = new Group(DEFAULT_ID, DEFAULT_GROUP_NAME);
 
-		new DaoInitializer().initializeDatabase();
 		groupDao = new GroupDao();
 		groupDao.addGroups(testGroup);
 
@@ -77,24 +75,16 @@ class StudentDaoTest {
 		Student invalidStudent = new Student(DEFAULT_ID, NON_EXISTENT_ID, DEFAULT_STUDENT_FIRST_NAME,
 				DEFAULT_STUDENT_LAST_NAME);
 
-		assertThrows(GroupIdDAOException.class,
+		assertThrows(DAOException.class,
 				() -> studentDao.addStudents(invalidStudent),
 				"Adding a student with a non-existent group ID should throw an exception.");
 	}
 
 	@Test
-	void findStudentByIdShouldReturnNotFoundWhenStudentDoesNotExist() {
-		Student resultStudent = studentDao.findStudentById(NON_EXISTENT_ID);
-
-		assertEquals(NotFoundConstants.NOT_FOUND.getId(),
-				resultStudent.getStudentId(),
-				"Non-existent student ID should match NOT_FOUND constant.");
-		assertEquals(NotFoundConstants.NOT_FOUND.getName(),
-				resultStudent.getFirstName(),
-				"Non-existent student first name should match NOT_FOUND constant.");
-		assertEquals(NotFoundConstants.NOT_FOUND.getName(),
-				resultStudent.getLastName(),
-				"Non-existent student last name should match NOT_FOUND constant.");
+	void findStudentByIdShouldThrowExceptionWhenStudentDoesNotExist() {
+		assertThrows(ObjectNotFoundDAOException.class,
+				() -> studentDao.findStudentById(NON_EXISTENT_ID),
+				"Looking for a non-existent student should throw an exception.");
 	}
 
 	@Test
@@ -150,7 +140,7 @@ class StudentDaoTest {
 
 		Student wrongDataStudent = new Student(student.getStudentId(), NON_EXISTENT_ID, ADDITIONAL_STUDENT_FIRST_NAME,
 				ADDITIONAL_STUDENT_LAST_NAME);
-		assertThrows(GroupIdDAOException.class,
+		assertThrows(DAOException.class,
 				() -> studentDao.updateStudent(wrongDataStudent),
 				"Updating a non-existent student should throw a DAOException.");
 

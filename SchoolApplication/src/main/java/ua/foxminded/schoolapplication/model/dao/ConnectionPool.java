@@ -5,8 +5,8 @@ import com.zaxxer.hikari.HikariDataSource;
 
 import ua.foxminded.schoolapplication.model.dao.exception.DAOException;
 import ua.foxminded.schoolapplication.util.PropertiesLoader;
-import ua.foxminded.schoolapplication.util.PropertiesLoadingException;
 
+import org.flywaydb.core.Flyway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,14 +16,23 @@ import java.util.Properties;
 
 public class ConnectionPool {
 	private static final Logger logger = LoggerFactory.getLogger(ConnectionPool.class);
-	private static final String PROPERTIES_FILE = "hikari.properties";
-	private static final HikariDataSource dataSource = createDataSource();
 
-	private ConnectionPool() {
+	private static final String POOL_CONFIG = "hikari.properties";
+	private static final String MIGRATION_CONFIG = "flyway.properties";
+
+	private static final HikariDataSource dataSource;
+
+	static {
+		try {
+			dataSource = createDataSource();
+			initializeDatabase();
+		} catch (Exception e) {
+			logger.error("Failed to initialize Connection Pool", e);
+			throw new RuntimeException("Failed to initialize Connection Pool", e);
+		}
 	}
 
-	public static HikariDataSource getDataSource() {
-		return dataSource;
+	private ConnectionPool() {
 	}
 
 	public static Connection getConnection() throws SQLException {
@@ -35,46 +44,23 @@ public class ConnectionPool {
 	}
 
 	private static HikariDataSource createDataSource() {
-		try {
-			logger.debug("Creating HikariDataSource.");
-			HikariConfig config = createConfig();
-			HikariDataSource dataSource = new HikariDataSource(config);
-			logger.info("HikariDataSource successfully created.");
+		logger.debug("Creating HikariDataSource.");
 
-			return dataSource;
-		} catch (Exception e) {
-			logger.error("Failed to create HikariDataSource", e);
-			throw new DAOException("Failed to create HikariDataSource", e);
-		}
+		Properties properties = PropertiesLoader.loadProperties(POOL_CONFIG);
+		HikariDataSource dataSource = new HikariDataSource(new HikariConfig(properties));
+		logger.info("HikariDataSource successfully created.");
+
+		return dataSource;
 	}
 
-	private static HikariConfig createConfig() {
-		logger.debug("Initializing HikariConfig for database connection pool.");
+	private static void initializeDatabase() throws DAOException {
+		logger.debug("Starting database migration.");
 
-		try {
-			Properties properties = loadProperties(PROPERTIES_FILE);
-			HikariConfig config = new HikariConfig(properties);
-			logger.debug("HikariConfig initialized with settings: jdbcUrl={}, username={}, maxPoolSize={}, minIdle={}",
-					config.getJdbcUrl(),
-					config.getUsername(),
-					config.getMaximumPoolSize(),
-					config.getMinimumIdle());
+		Properties properties = PropertiesLoader.loadProperties(MIGRATION_CONFIG);
+		Flyway flyway = Flyway.configure().dataSource(dataSource).configuration(properties).load();
+		logger.debug("Flyway dataSource created successfully.");
 
-			return config;
-		} catch (Exception e) {
-			logger.error("HikariConfig : Failed to initialize HikariConfig", e);
-			throw new DAOException("HikariConfig : Failed to initialize HikariConfig", e);
-		}
-	}
-
-	private static Properties loadProperties(String fileName) {
-		logger.debug("Loading properties from file: {}", fileName);
-
-		try {
-			return PropertiesLoader.loadProperties(fileName);
-		} catch (PropertiesLoadingException e) {
-			logger.error("HikariConfig : Failed to load properties file: {}", fileName, e);
-			throw new DAOException("HikariConfig : Failed to load properties file: " + fileName, e);
-		}
+		flyway.migrate();
+		logger.info("Database migration completed successfully.");
 	}
 }

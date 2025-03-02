@@ -8,7 +8,7 @@ import ua.foxminded.schoolapplication.model.domain.Student;
 import static org.junit.jupiter.api.Assertions.*;
 
 class StudentValidatorTest {
-	static final int DEFAULT_ID = 1;
+	static final Long DEFAULT_ID = 1L;
 
 	static final String VALID_FIRST_NAME = "John";
 	static final String VALID_LAST_NAME = "Doe";

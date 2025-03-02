@@ -9,7 +9,8 @@ import ua.foxminded.schoolapplication.model.domain.Course;
 import static org.junit.jupiter.api.Assertions.*;
 
 class CourseValidatorTest {
-	private static final int DEFAULT_ID = 1;
+	private static final Long DEFAULT_ID = 1L;
+	
 	private static final String VALID_COURSE_NAME = "Mathematics 101";
 	private static final String VALID_COURSE_DESCRIPTION = "An introductory course to mathematics.";
 

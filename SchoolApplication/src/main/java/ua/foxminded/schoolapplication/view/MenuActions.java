@@ -66,7 +66,7 @@ public class MenuActions {
 
 	public void addNewStudent() {
 		System.out.print("Enter group ID: ");
-		int groupId = scanner.nextInt();
+		Long groupId = scanner.nextLong();
 		scanner.nextLine();
 
 		System.out.print("Enter first name: ");
@@ -75,7 +75,7 @@ public class MenuActions {
 		System.out.print("Enter last name: ");
 		String lastName = scanner.nextLine().trim();
 
-		Student student = new Student(0, groupId, firstName, lastName);
+		Student student = new Student(0L, groupId, firstName, lastName);
 
 		try {
 			studentDao.addStudents(student);
@@ -92,7 +92,7 @@ public class MenuActions {
 
 	public void deleteStudentById() {
 		System.out.print("Enter STUDENT_ID to delete: ");
-		int studentId = scanner.nextInt();
+		Long studentId = scanner.nextLong();
 		scanner.nextLine();
 
 		try {
@@ -107,11 +107,11 @@ public class MenuActions {
 
 	public void addStudentToCourse() {
 		System.out.print("Enter STUDENT_ID: ");
-		int studentId = scanner.nextInt();
+		Long studentId = scanner.nextLong();
 		scanner.nextLine();
 
 		System.out.print("Enter COURSE_ID: ");
-		int courseId = scanner.nextInt();
+		Long courseId = scanner.nextLong();
 		scanner.nextLine();
 
 		try {
@@ -126,11 +126,11 @@ public class MenuActions {
 
 	public void removeStudentFromCourse() {
 		System.out.print("Enter STUDENT_ID: ");
-		int studentId = scanner.nextInt();
+		Long studentId = scanner.nextLong();
 		scanner.nextLine();
 
 		System.out.print("Enter COURSE_ID to remove: ");
-		int courseId = scanner.nextInt();
+		Long courseId = scanner.nextLong();
 		scanner.nextLine();
 
 		try {
