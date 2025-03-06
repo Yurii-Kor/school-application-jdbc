@@ -10,7 +10,7 @@ import ua.foxminded.schoolapplication.model.dao.exception.DAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.GroupIdDAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.ObjectNotFoundDAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.StudentCourseAlreadyExistsDAOException;
-import ua.foxminded.schoolapplication.model.dao.exception.ValidationDAOException;
+import ua.foxminded.schoolapplication.model.dao.exception.ValidationException;
 import ua.foxminded.schoolapplication.model.domain.Group;
 import ua.foxminded.schoolapplication.model.domain.Student;
 
@@ -83,7 +83,7 @@ public class MenuActions {
 					"Student added successfully: " + firstName + " " + lastName + " (Group ID: " + groupId + ")");
 		} catch (GroupIdDAOException e) {
 			System.err.println("Error: Invalid group ID. This group does not exist.");
-		} catch (ValidationDAOException e) {
+		} catch (ValidationException e) {
 			System.err.println("Error: A required field is missing. Please ensure all fields are filled.");
 		} catch (DAOException e) {
 			System.err.println("An unexpected error occurred while adding the student: " + e.getMessage());

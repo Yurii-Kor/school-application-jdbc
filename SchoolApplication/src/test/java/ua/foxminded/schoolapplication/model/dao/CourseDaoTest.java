@@ -3,7 +3,7 @@ package ua.foxminded.schoolapplication.model.dao;
 import org.junit.jupiter.api.*;
 import ua.foxminded.schoolapplication.model.dao.exception.CourseNameDAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.ObjectNotFoundDAOException;
-import ua.foxminded.schoolapplication.model.dao.exception.ValidationDAOException;
+import ua.foxminded.schoolapplication.model.dao.exception.ValidationException;
 import ua.foxminded.schoolapplication.model.domain.Course;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -44,7 +44,7 @@ class CourseDaoTest {
 	@Test
 	void addCoursesShouldThrowExceptionWhenAddingCourseWithInvalidData() {
 		Course invalidCourse = new Course(DEFAULT_COURSE_ID, null, DEFAULT_COURSE_DESCRIPTION);
-		assertThrows(ValidationDAOException.class,
+		assertThrows(ValidationException.class,
 				() -> courseDao.addCourses(invalidCourse),
 				"Adding a course with an invalid course name should throw an exception.");
 	}

@@ -3,7 +3,6 @@ package ua.foxminded.schoolapplication.model.dao;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
-import ua.foxminded.schoolapplication.model.dao.exception.DAOException;
 import ua.foxminded.schoolapplication.util.PropertiesLoader;
 
 import org.flywaydb.core.Flyway;
@@ -53,7 +52,7 @@ public class ConnectionPool {
 		return dataSource;
 	}
 
-	private static void initializeDatabase() throws DAOException {
+	private static void initializeDatabase() {
 		logger.debug("Starting database migration.");
 
 		Properties properties = PropertiesLoader.loadProperties(MIGRATION_CONFIG);

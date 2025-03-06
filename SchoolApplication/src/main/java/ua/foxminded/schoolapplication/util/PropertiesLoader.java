@@ -10,6 +10,7 @@ public final class PropertiesLoader {
 	private static final Logger logger = LoggerFactory.getLogger(PropertiesLoader.class);
 
 	private PropertiesLoader() {
+		throw new UnsupportedOperationException("Utility class should not be instantiated");
 	}
 
 	public static Properties loadProperties(String fileName) throws PropertiesLoadingException {

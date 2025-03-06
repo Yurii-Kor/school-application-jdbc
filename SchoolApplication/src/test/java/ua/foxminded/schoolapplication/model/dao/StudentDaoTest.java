@@ -4,7 +4,7 @@ import org.junit.jupiter.api.*;
 
 import ua.foxminded.schoolapplication.model.dao.exception.DAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.ObjectNotFoundDAOException;
-import ua.foxminded.schoolapplication.model.dao.exception.ValidationDAOException;
+import ua.foxminded.schoolapplication.model.dao.exception.ValidationException;
 import ua.foxminded.schoolapplication.model.domain.Group;
 import ua.foxminded.schoolapplication.model.domain.Student;
 
@@ -65,7 +65,7 @@ class StudentDaoTest {
 	void addStudentsShouldThrowExceptionWhenAddingStudentWithInvalidData() {
 		Student invalidStudent = new Student(DEFAULT_ID, generatedGroupId, DEFAULT_STUDENT_FIRST_NAME, null);
 
-		assertThrows(ValidationDAOException.class,
+		assertThrows(ValidationException.class,
 				() -> studentDao.addStudents(invalidStudent),
 				"Adding a student with invalid data should throw an exception.");
 	}

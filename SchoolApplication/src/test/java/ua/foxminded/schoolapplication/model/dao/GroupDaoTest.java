@@ -4,7 +4,7 @@ import org.junit.jupiter.api.*;
 
 import ua.foxminded.schoolapplication.model.dao.exception.GroupNameDAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.ObjectNotFoundDAOException;
-import ua.foxminded.schoolapplication.model.dao.exception.ValidationDAOException;
+import ua.foxminded.schoolapplication.model.dao.exception.ValidationException;
 import ua.foxminded.schoolapplication.model.domain.Group;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -39,7 +39,7 @@ class GroupDaoTest {
 	@Test
 	void addGroupsShouldThrowExceptionWhenAddingGroupWithWrongGroupData() {
 		Group emptyNameGroup = new Group(DEFAULT_GROUP_ID, null);
-		assertThrows(ValidationDAOException.class,
+		assertThrows(ValidationException.class,
 				() -> groupDao.addGroups(emptyNameGroup),
 				"Adding a group with an invalid group name should throw an exception.");
 	}
