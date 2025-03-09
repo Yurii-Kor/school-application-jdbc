@@ -2,7 +2,7 @@ package ua.foxminded.schoolapplication.model.dao;
 
 import org.junit.jupiter.api.*;
 
-import ua.foxminded.schoolapplication.model.dao.exception.DAOException;
+import ua.foxminded.schoolapplication.model.dao.exception.GroupIdDAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.ObjectNotFoundDAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.ValidationException;
 import ua.foxminded.schoolapplication.model.domain.Group;
@@ -80,7 +80,7 @@ class StudentDaoTest {
 		Student invalidStudent = new Student(DEFAULT_ID, NON_EXISTENT_ID, DEFAULT_STUDENT_FIRST_NAME,
 				DEFAULT_STUDENT_LAST_NAME);
 
-		assertThrows(DAOException.class,
+		assertThrows(GroupIdDAOException.class,
 				() -> studentDao.addStudents(invalidStudent),
 				"Adding a student with a non-existent group ID should throw an exception.");
 	}
@@ -143,7 +143,7 @@ class StudentDaoTest {
 
 		Student wrongDataStudent = new Student(generatedStudents.get(GENERATED_STUDENT).getStudentId(), NON_EXISTENT_ID,
 				ADDITIONAL_STUDENT_FIRST_NAME, ADDITIONAL_STUDENT_LAST_NAME);
-		assertThrows(DAOException.class,
+		assertThrows(GroupIdDAOException.class,
 				() -> studentDao.updateStudent(wrongDataStudent),
 				"Updating a non-existent student should throw a DAOException.");
 

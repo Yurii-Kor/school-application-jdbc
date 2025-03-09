@@ -1,7 +1,8 @@
 package ua.foxminded.schoolapplication.model.dao;
 
 import org.junit.jupiter.api.*;
-import ua.foxminded.schoolapplication.model.dao.exception.DAOException;
+
+import ua.foxminded.schoolapplication.model.dao.exception.ObjectNotFoundDAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.StudentCourseAlreadyExistsDAOException;
 import ua.foxminded.schoolapplication.model.domain.Course;
 import ua.foxminded.schoolapplication.model.domain.Group;
@@ -63,7 +64,7 @@ class StudentsCoursesDaoTest {
 	}
 
 	@Test
-	void addStudentCourseShouldAddRelationAndRetrieveIds() throws DAOException {
+	void addStudentCourseShouldAddRelationAndRetrieveIds() {
 		studentsCoursesDao.addStudentCourse(testStudent.getStudentId(), testCourse.getCourseId());
 
 		List<Long> courseIds = studentsCoursesDao.findCourseIdsByStudentId(testStudent.getStudentId());
@@ -82,7 +83,7 @@ class StudentsCoursesDaoTest {
 	}
 
 	@Test
-	void addStudentCourseShouldThrowExceptionWhenDuplicateRelationExists() throws DAOException {
+	void addStudentCourseShouldThrowExceptionWhenDuplicateRelationExists() {
 		studentsCoursesDao.addStudentCourse(testStudent.getStudentId(), testCourse.getCourseId());
 		assertThrows(StudentCourseAlreadyExistsDAOException.class,
 				() -> studentsCoursesDao.addStudentCourse(testStudent.getStudentId(), testCourse.getCourseId()),
@@ -93,7 +94,7 @@ class StudentsCoursesDaoTest {
 
 	@Test
 	void deleteStudentCourseShouldThrowExceptionWhenRelationDoesNotExist() {
-		assertThrows(DAOException.class,
+		assertThrows(ObjectNotFoundDAOException.class,
 				() -> studentsCoursesDao.deleteStudentCourse(testStudent.getStudentId(), testCourse.getCourseId()),
 				"Deleting a non-existent students_courses relation should throw an exception.");
 	}

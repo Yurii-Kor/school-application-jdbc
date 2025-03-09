@@ -1,6 +1,7 @@
 package ua.foxminded.schoolapplication.model.dao;
 
 import org.junit.jupiter.api.*;
+
 import ua.foxminded.schoolapplication.model.dao.exception.CourseNameDAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.ObjectNotFoundDAOException;
 import ua.foxminded.schoolapplication.model.dao.exception.ValidationException;
