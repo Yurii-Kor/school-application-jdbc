@@ -22,6 +22,8 @@ class StudentDaoTest {
 	static final String DEFAULT_STUDENT_LAST_NAME = "LastName";
 	static final String ADDITIONAL_STUDENT_LAST_NAME = "AdditionalLastName";
 
+	static final int GENERATED_STUDENT = 0;
+
 	Long generatedGroupId = DEFAULT_ID;
 	StudentDao studentDao;
 	GroupDao groupDao;
@@ -48,14 +50,17 @@ class StudentDaoTest {
 
 	@Test
 	void addStudentsShouldAddNewStudentAndFindById() {
-		Student expectedStudent = new Student(DEFAULT_ID, generatedGroupId, DEFAULT_STUDENT_FIRST_NAME,
-				DEFAULT_STUDENT_LAST_NAME);
-		studentDao.addStudents(expectedStudent);
+		List<Student> generatedStudents = studentDao.addStudents(
+				new Student(DEFAULT_ID, generatedGroupId, DEFAULT_STUDENT_FIRST_NAME, DEFAULT_STUDENT_LAST_NAME));
 
-		Student actualStudent = studentDao.findStudentById(expectedStudent.getStudentId());
+		Student actualStudent = studentDao.findStudentById(generatedStudents.get(GENERATED_STUDENT).getStudentId());
 		assertNotNull(actualStudent, "Returned student should not be null.");
-		assertEquals(expectedStudent.getFirstName(), actualStudent.getFirstName(), "First name should match.");
-		assertEquals(expectedStudent.getLastName(), actualStudent.getLastName(), "Last name should match.");
+		assertEquals(generatedStudents.get(GENERATED_STUDENT).getFirstName(),
+				actualStudent.getFirstName(),
+				"First name should match.");
+		assertEquals(generatedStudents.get(GENERATED_STUDENT).getLastName(),
+				actualStudent.getLastName(),
+				"Last name should match.");
 		assertTrue(actualStudent.getStudentId() > DEFAULT_ID, "Generated student ID should be greater than 0.");
 
 		studentDao.deleteStudent(actualStudent.getStudentId());
@@ -89,32 +94,31 @@ class StudentDaoTest {
 
 	@Test
 	void findStudentsByGroupIdShouldReturnListOfStudents() {
-		Student student1 = new Student(DEFAULT_ID, generatedGroupId, DEFAULT_STUDENT_FIRST_NAME,
-				DEFAULT_STUDENT_LAST_NAME);
-		Student student2 = new Student(DEFAULT_ID, generatedGroupId, ADDITIONAL_STUDENT_FIRST_NAME,
-				ADDITIONAL_STUDENT_LAST_NAME);
-		studentDao.addStudents(student1, student2);
+		List<Student> generatedStudents = studentDao.addStudents(
+				new Student(DEFAULT_ID, generatedGroupId, DEFAULT_STUDENT_FIRST_NAME, DEFAULT_STUDENT_LAST_NAME),
+				new Student(DEFAULT_ID, generatedGroupId, ADDITIONAL_STUDENT_FIRST_NAME, ADDITIONAL_STUDENT_LAST_NAME));
 
 		List<Student> students = studentDao.findStudentsByGroupId(generatedGroupId);
-		assertTrue(students.contains(student1));
-		assertTrue(students.contains(student2));
 
-		for (Student s : students) {
+		for (Student s : generatedStudents) {
+			assertTrue(students.contains(s));
+		}
+
+		for (Student s : generatedStudents) {
 			studentDao.deleteStudent(s.getStudentId());
 		}
 	}
 
 	@Test
 	void updateStudentShouldUpdateExistingStudent() {
-		Student student = new Student(DEFAULT_ID, generatedGroupId, DEFAULT_STUDENT_FIRST_NAME,
-				DEFAULT_STUDENT_LAST_NAME);
-		studentDao.addStudents(student);
+		List<Student> generatedStudents = studentDao.addStudents(
+				new Student(DEFAULT_ID, generatedGroupId, DEFAULT_STUDENT_FIRST_NAME, DEFAULT_STUDENT_LAST_NAME));
 
-		student.setFirstName(ADDITIONAL_STUDENT_FIRST_NAME);
-		student.setLastName(ADDITIONAL_STUDENT_LAST_NAME);
-		studentDao.updateStudent(student);
+		generatedStudents.get(GENERATED_STUDENT).setFirstName(ADDITIONAL_STUDENT_FIRST_NAME);
+		generatedStudents.get(GENERATED_STUDENT).setLastName(ADDITIONAL_STUDENT_LAST_NAME);
+		studentDao.updateStudent(generatedStudents.get(GENERATED_STUDENT));
 
-		Student actualStudent = studentDao.findStudentById(student.getStudentId());
+		Student actualStudent = studentDao.findStudentById(generatedStudents.get(GENERATED_STUDENT).getStudentId());
 		assertEquals(ADDITIONAL_STUDENT_FIRST_NAME,
 				actualStudent.getFirstName(),
 				"Student first name should be updated.");
@@ -134,17 +138,16 @@ class StudentDaoTest {
 
 	@Test
 	void updateStudentShouldThrowExceptionWhenGroupDoesNotExist() {
-		Student student = new Student(DEFAULT_ID, generatedGroupId, DEFAULT_STUDENT_FIRST_NAME,
-				DEFAULT_STUDENT_LAST_NAME);
-		studentDao.addStudents(student);
+		List<Student> generatedStudents = studentDao.addStudents(
+				new Student(DEFAULT_ID, generatedGroupId, DEFAULT_STUDENT_FIRST_NAME, DEFAULT_STUDENT_LAST_NAME));
 
-		Student wrongDataStudent = new Student(student.getStudentId(), NON_EXISTENT_ID, ADDITIONAL_STUDENT_FIRST_NAME,
-				ADDITIONAL_STUDENT_LAST_NAME);
+		Student wrongDataStudent = new Student(generatedStudents.get(GENERATED_STUDENT).getStudentId(), NON_EXISTENT_ID,
+				ADDITIONAL_STUDENT_FIRST_NAME, ADDITIONAL_STUDENT_LAST_NAME);
 		assertThrows(DAOException.class,
 				() -> studentDao.updateStudent(wrongDataStudent),
 				"Updating a non-existent student should throw a DAOException.");
 
-		studentDao.deleteStudent(student.getStudentId());
+		studentDao.deleteStudent(generatedStudents.get(GENERATED_STUDENT).getStudentId());
 	}
 
 	@Test

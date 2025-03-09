@@ -1,6 +1,5 @@
 package ua.foxminded.schoolapplication.view;
 
-import ua.foxminded.schoolapplication.model.dao.ConnectionPool;
 import ua.foxminded.schoolapplication.model.dao.exception.DAOException;
 
 import java.util.Scanner;
@@ -79,7 +78,6 @@ public class MainMenu {
 
 	private void closeApplication() {
 		scanner.close();
-		ConnectionPool.closeSource();
 		System.out.println("Resources released. Application closed.");
 	}
 }

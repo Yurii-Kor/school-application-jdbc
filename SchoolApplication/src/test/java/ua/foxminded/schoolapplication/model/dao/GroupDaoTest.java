@@ -9,6 +9,8 @@ import ua.foxminded.schoolapplication.model.domain.Group;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.List;
+
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GroupDaoTest {
 	static final Long DEFAULT_GROUP_ID = 0L;
@@ -16,6 +18,9 @@ class GroupDaoTest {
 	static final String DEFAULT_GROUP_NAME = "TestGroup-11";
 	static final String UPDATED_GROUP_NAME = "NonExistentGroup-22";
 	static final String NON_EXISTENT_GROUP_NAME = "UpdatedGroup-33";
+
+	static final int GENERATED_GROUP = 0;
+
 	GroupDao groupDao;
 
 	@BeforeEach
@@ -25,12 +30,13 @@ class GroupDaoTest {
 
 	@Test
 	void addGroupsShouldAddNewGroupAndFindById() {
-		Group expectedGroup = new Group(DEFAULT_GROUP_ID, DEFAULT_GROUP_NAME);
-		groupDao.addGroups(expectedGroup);
-		Group actualGroup = groupDao.findGroupById(expectedGroup.getGroupId());
+		List<Group> generatedGroups = groupDao.addGroups(new Group(DEFAULT_GROUP_ID, DEFAULT_GROUP_NAME));
+		Group actualGroup = groupDao.findGroupById(generatedGroups.get(GENERATED_GROUP).getGroupId());
 
 		assertNotNull(actualGroup, "Returned group should not be null.");
-		assertEquals(expectedGroup.getGroupName(), actualGroup.getGroupName(), "Group names should match.");
+		assertEquals(generatedGroups.get(GENERATED_GROUP).getGroupName(),
+				actualGroup.getGroupName(),
+				"Group names should match.");
 		assertTrue(actualGroup.getGroupId() > DEFAULT_GROUP_ID, "Generated group ID should be greater than 0.");
 
 		groupDao.deleteGroup(actualGroup.getGroupId());
@@ -56,12 +62,12 @@ class GroupDaoTest {
 		assertEquals(DEFAULT_GROUP_ID, firstGroup.getGroupId(), "Transaction shold be rolled back.");
 		assertEquals(DEFAULT_GROUP_ID, duplicateGroup.getGroupId(), "Transaction shold be rolled back.");
 
-		groupDao.addGroups(firstGroup);
+		List<Group> generatedGroups = groupDao.addGroups(firstGroup);
 		assertThrows(GroupNameDAOException.class,
 				() -> groupDao.addGroups(duplicateGroup),
 				"Adding a group with duplicate group name should throw an exception.");
 
-		groupDao.deleteGroup(firstGroup.getGroupId());
+		groupDao.deleteGroup(generatedGroups.get(GENERATED_GROUP).getGroupId());
 	}
 
 	@Test
@@ -73,13 +79,12 @@ class GroupDaoTest {
 
 	@Test
 	void updateGroupShouldUpdateExistingGroup() {
-		Group group = new Group(DEFAULT_GROUP_ID, DEFAULT_GROUP_NAME);
-		groupDao.addGroups(group);
+		List<Group> generatedGroups = groupDao.addGroups(new Group(DEFAULT_GROUP_ID, DEFAULT_GROUP_NAME));
 
-		Group updatedGroup = new Group(group.getGroupId(), UPDATED_GROUP_NAME);
+		Group updatedGroup = new Group(generatedGroups.get(GENERATED_GROUP).getGroupId(), UPDATED_GROUP_NAME);
 		groupDao.updateGroup(updatedGroup);
 
-		Group actualGroup = groupDao.findGroupById(group.getGroupId());
+		Group actualGroup = groupDao.findGroupById(generatedGroups.get(GENERATED_GROUP).getGroupId());
 		assertEquals(updatedGroup.getGroupName(),
 				actualGroup.getGroupName(),
 				"Group name should be updated after updateGroup call.");
@@ -99,15 +104,16 @@ class GroupDaoTest {
 	void updateGroupShouldThrowExceptionWhenUpdatingExistentGroupName() {
 		Group group = new Group(DEFAULT_GROUP_ID, DEFAULT_GROUP_NAME);
 		Group groupWithExistentGroupName = new Group(DEFAULT_GROUP_ID, UPDATED_GROUP_NAME);
-		groupDao.addGroups(group, groupWithExistentGroupName);
+		List<Group> generatedGroups = groupDao.addGroups(group, groupWithExistentGroupName);
 
-		Group updatedGroup = new Group(group.getGroupId(), UPDATED_GROUP_NAME);
+		Group updatedGroup = new Group(generatedGroups.get(GENERATED_GROUP).getGroupId(), UPDATED_GROUP_NAME);
 		assertThrows(GroupNameDAOException.class,
 				() -> groupDao.updateGroup(updatedGroup),
 				"Updating a group with an existing name should throw an exception.");
 
-		groupDao.deleteGroup(group.getGroupId());
-		groupDao.deleteGroup(groupWithExistentGroupName.getGroupId());
+		for (Group generatedGroup : generatedGroups) {
+			groupDao.deleteGroup(generatedGroup.getGroupId());
+		}
 	}
 
 	@Test

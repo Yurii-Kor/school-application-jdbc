@@ -19,8 +19,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class StudentDao {
 	private static final Logger logger = LoggerFactory.getLogger(StudentDao.class);
@@ -67,7 +69,7 @@ public class StudentDao {
 		this.studentValidator = new EntityValidator<>();
 	}
 
-	public void addStudents(Student... students) throws DAOException {
+	public List<Student> addStudents(Student... students) throws DAOException {
 		studentValidator.validateEntities(students);
 		logger.debug("Add students: {}", Arrays.toString(students));
 
@@ -114,21 +116,10 @@ public class StudentDao {
 			connection.commit();
 			connection.setAutoCommit(true);
 			logger.info("All students added successfully.");
+			return Arrays.asList(students);
 		} catch (SQLException e) {
-			String sqlState = SQLExceptionUtil.extractSqlState(e);
-
-			if (DAOErrorCode.FOREIGN_KEY_VIOLATION.equals(sqlState)) {
-				logger.warn("Foreign key violation: Invalid group_id specified during 'addStudents'.", e);
-				throw new GroupIdDAOException("Invalid group id specified for student.", e);
-			}
-
-			if (DAOErrorCode.NULL_CONSTRAINT_VIOLATION.equals(sqlState)) {
-				logger.warn("addStudents : A required field is missing (NULL constraint violation)", e);
-				throw new ValidationException("A required field is missing (NULL constraint violation)", e);
-			}
-
-			logger.error("Failed to add students: {}", e.getMessage(), e);
-			throw new DAOException("Failed to add students.", e);
+			SQLExceptionUtil.handleSQLException(e, getDAOExceptionMap(e));
+			throw new RuntimeException("SQLException wasn't caught by Handler.", e);
 		}
 	}
 
@@ -211,20 +202,7 @@ public class StudentDao {
 			logger.info("Student updated successfully: {}", student);
 
 		} catch (SQLException e) {
-			String sqlState = SQLExceptionUtil.extractSqlState(e);
-
-			if (DAOErrorCode.FOREIGN_KEY_VIOLATION.equals(sqlState)) {
-				logger.warn("Foreign key violation: Invalid group_id specified during 'updateStudent'", e);
-				throw new GroupIdDAOException("Invalid group id specified for student.", e);
-			}
-
-			if (DAOErrorCode.NULL_CONSTRAINT_VIOLATION.equals(sqlState)) {
-				logger.warn("updateStudent : A required field is missing (NULL constraint violation)", e);
-				throw new ValidationException("A required field is missing (NULL constraint violation)", e);
-			}
-
-			logger.error("Error updating student: {}", student, e);
-			throw new DAOException("Failed to update student", e);
+			SQLExceptionUtil.handleSQLException(e, getDAOExceptionMap(e));
 		}
 	}
 
@@ -244,5 +222,16 @@ public class StudentDao {
 			logger.error("Error deleting student with ID: {}", studentId, e);
 			throw new DAOException("Failed to delete student with ID: " + studentId, e);
 		}
+	}
+
+	private Map<String, DAOException> getDAOExceptionMap(SQLException e) {
+		Map<String, DAOException> exceptionMap = new HashMap<>();
+
+		exceptionMap.put(DAOErrorCode.FOREIGN_KEY_VIOLATION,
+				new GroupIdDAOException("Invalid group id specified for student.", e));
+		exceptionMap.put(DAOErrorCode.NULL_CONSTRAINT_VIOLATION,
+				new ValidationException("A required field is missing (NULL constraint violation)", e));
+
+		return exceptionMap;
 	}
 }

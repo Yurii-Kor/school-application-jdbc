@@ -8,6 +8,8 @@ import ua.foxminded.schoolapplication.model.domain.Course;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.List;
+
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CourseDaoTest {
 	static final Long DEFAULT_COURSE_ID = 0L;
@@ -18,6 +20,8 @@ class CourseDaoTest {
 	static final String UPDATED_COURSE_DESCRIPTION = "In-depth study of advanced math topics.";
 	static final String NON_EXISTENT_COURSE_NAME = "NonExistentCourse";
 
+	static final int GENERATED_COURSE = 0;
+
 	private CourseDao courseDao;
 
 	@BeforeEach
@@ -27,13 +31,15 @@ class CourseDaoTest {
 
 	@Test
 	void addCoursesShouldAddNewCourseAndFindById() {
-		Course expectedCourse = new Course(DEFAULT_COURSE_ID, DEFAULT_COURSE_NAME, DEFAULT_COURSE_DESCRIPTION);
-		courseDao.addCourses(expectedCourse);
-		Course actualCourse = courseDao.findCourseById(expectedCourse.getCourseId());
+		List<Course> generatedCourses = courseDao
+				.addCourses(new Course(DEFAULT_COURSE_ID, DEFAULT_COURSE_NAME, DEFAULT_COURSE_DESCRIPTION));
+		Course actualCourse = courseDao.findCourseById(generatedCourses.get(GENERATED_COURSE).getCourseId());
 
 		assertNotNull(actualCourse, "Returned course should not be null.");
-		assertEquals(expectedCourse.getCourseName(), actualCourse.getCourseName(), "Course names should match.");
-		assertEquals(expectedCourse.getCourseDescription(),
+		assertEquals(generatedCourses.get(GENERATED_COURSE).getCourseName(),
+				actualCourse.getCourseName(),
+				"Course names should match.");
+		assertEquals(generatedCourses.get(GENERATED_COURSE).getCourseDescription(),
 				actualCourse.getCourseDescription(),
 				"Course descriptions should match.");
 		assertTrue(actualCourse.getCourseId() > DEFAULT_COURSE_ID, "Generated course ID should be greater than 0.");
@@ -61,12 +67,12 @@ class CourseDaoTest {
 		assertEquals(DEFAULT_COURSE_ID, firstCourse.getCourseId(), "Transaction should be rolled back.");
 		assertEquals(DEFAULT_COURSE_ID, duplicateCourse.getCourseId(), "Transaction should be rolled back.");
 
-		courseDao.addCourses(firstCourse);
+		List<Course> generatedCourses = courseDao.addCourses(firstCourse);
 		assertThrows(CourseNameDAOException.class,
 				() -> courseDao.addCourses(duplicateCourse),
 				"Adding a course with duplicate course name should throw an exception.");
 
-		courseDao.deleteCourse(firstCourse.getCourseId());
+		courseDao.deleteCourse(generatedCourses.get(GENERATED_COURSE).getCourseId());
 	}
 
 	@Test
@@ -78,15 +84,16 @@ class CourseDaoTest {
 
 	@Test
 	void updateCourseShouldUpdateExistingCourse() {
-		Course course = new Course(DEFAULT_COURSE_ID, DEFAULT_COURSE_NAME, DEFAULT_COURSE_DESCRIPTION);
-		courseDao.addCourses(course);
+		List<Course> generatedCourses = courseDao
+				.addCourses(new Course(DEFAULT_COURSE_ID, DEFAULT_COURSE_NAME, DEFAULT_COURSE_DESCRIPTION));
 
-		Course updatedCourse = new Course(course.getCourseId(), UPDATED_COURSE_NAME, UPDATED_COURSE_DESCRIPTION);
+		Course updatedCourse = new Course(generatedCourses.get(GENERATED_COURSE).getCourseId(), UPDATED_COURSE_NAME,
+				UPDATED_COURSE_DESCRIPTION);
 		courseDao.updateCourse(updatedCourse);
 
-		Course actualCourse = courseDao.findCourseById(course.getCourseId());
-		assertEquals(UPDATED_COURSE_NAME, actualCourse.getCourseName(), "Course name should be updated.");
-		assertEquals(UPDATED_COURSE_DESCRIPTION,
+		Course actualCourse = courseDao.findCourseById(generatedCourses.get(GENERATED_COURSE).getCourseId());
+		assertEquals(updatedCourse.getCourseName(), actualCourse.getCourseName(), "Course name should be updated.");
+		assertEquals(updatedCourse.getCourseDescription(),
 				actualCourse.getCourseDescription(),
 				"Course description should be updated.");
 

@@ -20,6 +20,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class GroupDao {
 	private static final Logger logger = LoggerFactory.getLogger(GroupDao.class);
@@ -52,7 +55,7 @@ public class GroupDao {
 		this.groupValidator = new EntityValidator<>();
 	}
 
-	public void addGroups(Group... groups) throws DAOException {
+	public List<Group> addGroups(Group... groups) throws DAOException {
 		groupValidator.validateEntities(groups);
 		logger.debug("Add groups: {}", Arrays.toString(groups));
 
@@ -97,21 +100,10 @@ public class GroupDao {
 			connection.commit();
 			connection.setAutoCommit(true);
 			logger.info("All groups added successfully.");
+			return Arrays.asList(groups);
 		} catch (SQLException e) {
-			String sqlState = SQLExceptionUtil.extractSqlState(e);
-
-			if (DAOErrorCode.UNIQUE_VIOLATION.equals(sqlState)) {
-				logger.warn("addGroups : Unique constraint violated for group_name during 'addGroups'.", e);
-				throw new GroupNameDAOException("A group with the same name already exists.", e);
-			}
-
-			if (DAOErrorCode.NULL_CONSTRAINT_VIOLATION.equals(sqlState)) {
-				logger.warn("addGroups : A required field is missing (NULL constraint violation)", e);
-				throw new ValidationException("A required field is missing (NULL constraint violation)", e);
-			}
-
-			logger.error("Failed to add groups: {}", e.getMessage(), e);
-			throw new DAOException("Failed to add groups.", e);
+			SQLExceptionUtil.handleSQLException(e, getDAOExceptionMap(e));
+			throw new RuntimeException("SQLException wasn't caught by Handler.", e);
 		}
 	}
 
@@ -158,20 +150,7 @@ public class GroupDao {
 
 			logger.info("Group updated successfully: {}", group);
 		} catch (SQLException e) {
-			String sqlState = SQLExceptionUtil.extractSqlState(e);
-
-			if (DAOErrorCode.UNIQUE_VIOLATION.equals(sqlState)) {
-				logger.warn("updateGroup : Unique constraint violated for group_name during 'addGroups'.", e);
-				throw new GroupNameDAOException("A group with the same name already exists.", e);
-			}
-
-			if (DAOErrorCode.NULL_CONSTRAINT_VIOLATION.equals(sqlState)) {
-				logger.warn("updateGroup : A required field is missing (NULL constraint violation)", e);
-				throw new ValidationException("A required field is missing (NULL constraint violation)", e);
-			}
-
-			logger.error("Error updating group: {}", group, e);
-			throw new DAOException("Failed to update group", e);
+			SQLExceptionUtil.handleSQLException(e, getDAOExceptionMap(e));
 		}
 	}
 
@@ -191,13 +170,22 @@ public class GroupDao {
 
 			logger.info("Group deleted successfully with ID: {}", groupId);
 		} catch (SQLException e) {
-			if (DAOErrorCode.UNIQUE_VIOLATION.equals(SQLExceptionUtil.extractSqlState(e))) {
-				logger.warn("Cannot delete group with ID {} because it has dependent students", groupId, e);
-				throw new GroupIdDAOException("Group cannot be deleted because it has associated students", e);
-			}
+			Map<String, DAOException> exceptionMap = new HashMap<>();
+			exceptionMap.put(DAOErrorCode.UNIQUE_VIOLATION,
+					new GroupIdDAOException("Group cannot be deleted because it has associated students", e));
 
-			logger.error("Error deleting group with ID: {}", groupId, e);
-			throw new DAOException("Failed to delete group with ID: " + groupId, e);
+			SQLExceptionUtil.handleSQLException(e, exceptionMap);
 		}
+	}
+
+	private Map<String, DAOException> getDAOExceptionMap(SQLException e) {
+		Map<String, DAOException> exceptionMap = new HashMap<>();
+
+		exceptionMap.put(DAOErrorCode.UNIQUE_VIOLATION,
+				new GroupNameDAOException("A group with the same name already exists.", e));
+		exceptionMap.put(DAOErrorCode.NULL_CONSTRAINT_VIOLATION,
+				new ValidationException("A required field is missing (NULL constraint violation)", e));
+
+		return exceptionMap;
 	}
 }

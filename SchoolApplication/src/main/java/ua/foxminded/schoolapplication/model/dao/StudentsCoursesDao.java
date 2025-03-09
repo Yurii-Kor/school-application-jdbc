@@ -16,7 +16,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class StudentsCoursesDao {
 	private static final Logger logger = LoggerFactory.getLogger(StudentsCoursesDao.class);
@@ -78,13 +80,11 @@ public class StudentsCoursesDao {
 
 			logger.info("students_course relation added successfully: studentId={}, courseId={}", studentId, courseId);
 		} catch (SQLException e) {
-			if (DAOErrorCode.UNIQUE_VIOLATION.equals(SQLExceptionUtil.extractSqlState(e))) {
-				logger.warn("Duplicate relation detected for studentId={}, courseId={}", studentId, courseId, e);
-				throw new StudentCourseAlreadyExistsDAOException("The student-course relation already exists.", e);
-			}
+			Map<String, DAOException> exceptionMap = new HashMap<>();
+			exceptionMap.put(DAOErrorCode.UNIQUE_VIOLATION,
+					new StudentCourseAlreadyExistsDAOException("The student-course relation already exists.", e));
 
-			logger.error("Error adding students_course relation: studentId={}, courseId={}", studentId, courseId, e);
-			throw new DAOException("Failed to add students_course relation.", e);
+			SQLExceptionUtil.handleSQLException(e, exceptionMap);
 		}
 	}
 

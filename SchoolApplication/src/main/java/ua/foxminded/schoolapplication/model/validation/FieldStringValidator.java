@@ -33,22 +33,38 @@ public class FieldStringValidator {
 				maxLength,
 				regexPattern);
 
+		if (isEmptyValue(fieldValue, isNullPossible)) {
+			logger.info("Validation successful because Null or Empty string is possible.");
+			return;
+		}
+
+		checkLength(fieldValue, minLength, maxLength);
+
+		checkPattern(fieldValue, regexPattern);
+
+		logger.info("Validation successful for field value: '{}'", fieldValue.trim());
+	}
+
+	private static boolean isEmptyValue(String fieldValue, boolean isNullPossible) {
 		if (fieldValue == null || fieldValue.trim().isEmpty()) {
 			if (isNullPossible) {
-				logger.info("Validation successful because Null or Empty string is possible");
-				return;
+				return true;
 			} else {
 				logger.error("Field value cannot be null or empty.");
 				throw new ValidationException("Field value cannot be null or empty.");
 			}
 		}
 
-		String trimmedValue = fieldValue.trim();
-		int length = trimmedValue.length();
+		logger.info("Validation of Null or Empty String successful.");
+		return false;
+	}
+
+	private static void checkLength(String fieldValue, int minLength, int maxLength) {
+		int length = fieldValue.trim().length();
 
 		if (length < minLength || length > maxLength) {
 			logger.warn("Validation failed: Field value '{}' length {} is out of bounds [{}, {}]",
-					trimmedValue,
+					fieldValue.trim(),
 					length,
 					minLength,
 					maxLength);
@@ -58,7 +74,9 @@ public class FieldStringValidator {
 					maxLength,
 					length));
 		}
+	}
 
+	private static void checkPattern(String fieldValue, String regexPattern) {
 		Pattern pattern = PATTERN_CACHE.computeIfAbsent(regexPattern, key -> {
 			try {
 				logger.debug("Compiling and caching regex pattern: '{}'", key);
@@ -69,12 +87,12 @@ public class FieldStringValidator {
 			}
 		});
 
-		if (!pattern.matcher(trimmedValue).matches()) {
-			logger.warn("Validation failed: Field value '{}' does not match pattern '{}'", trimmedValue, regexPattern);
+		if (!pattern.matcher(fieldValue.trim()).matches()) {
+			logger.warn("Validation failed: Field value '{}' does not match pattern '{}'",
+					fieldValue.trim(),
+					regexPattern);
 			throw new ValidationException(
 					String.format("Field value does not match the required format: %s", regexPattern));
 		}
-
-		logger.info("Validation successful for field value: '{}'", trimmedValue);
 	}
 }

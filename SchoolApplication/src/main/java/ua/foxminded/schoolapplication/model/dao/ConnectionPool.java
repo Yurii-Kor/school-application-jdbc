@@ -38,10 +38,6 @@ public class ConnectionPool {
 		return dataSource.getConnection();
 	}
 
-	public static void closeSource() {
-		dataSource.close();
-	}
-
 	private static HikariDataSource createDataSource() {
 		logger.debug("Creating HikariDataSource.");
 

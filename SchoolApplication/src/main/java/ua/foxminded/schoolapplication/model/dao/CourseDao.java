@@ -18,6 +18,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class CourseDao {
 	private static final Logger logger = LoggerFactory.getLogger(CourseDao.class);
@@ -55,7 +58,7 @@ public class CourseDao {
 		this.courseValidator = new EntityValidator<>();
 	}
 
-	public void addCourses(Course... courses) throws DAOException {
+	public List<Course> addCourses(Course... courses) throws DAOException {
 		courseValidator.validateEntities(courses);
 		logger.debug("Add courses: {}", Arrays.toString(courses));
 
@@ -103,21 +106,10 @@ public class CourseDao {
 			connection.commit();
 			connection.setAutoCommit(true);
 			logger.info("All courses added successfully.");
+			return Arrays.asList(courses);
 		} catch (SQLException e) {
-			String sqlState = SQLExceptionUtil.extractSqlState(e);
-
-			if (DAOErrorCode.UNIQUE_VIOLATION.equals(sqlState)) {
-				logger.warn("addCourses: Unique constraint violated for course_name during 'addCourses'.", e);
-				throw new CourseNameDAOException("A course with the same name already exists.", e);
-			}
-
-			if (DAOErrorCode.NULL_CONSTRAINT_VIOLATION.equals(sqlState)) {
-				logger.warn("addCourses: A required field is missing (NULL constraint violation).", e);
-				throw new ValidationException("A required field is missing (NULL constraint violation).", e);
-			}
-
-			logger.error("Failed to add courses: {}", e.getMessage(), e);
-			throw new DAOException("Failed to add courses.", e);
+			SQLExceptionUtil.handleSQLException(e, getDAOExceptionMap(e));
+			throw new RuntimeException("SQLException wasn't caught by Handler.", e);
 		}
 	}
 
@@ -166,20 +158,7 @@ public class CourseDao {
 
 			logger.info("Course updated successfully: {}", course);
 		} catch (SQLException e) {
-			String sqlState = SQLExceptionUtil.extractSqlState(e);
-
-			if (DAOErrorCode.UNIQUE_VIOLATION.equals(sqlState)) {
-				logger.warn("updateCourse: Unique constraint violated for course_name during 'updateCourse'.", e);
-				throw new CourseNameDAOException("A course with the same name already exists.", e);
-			}
-
-			if (DAOErrorCode.NULL_CONSTRAINT_VIOLATION.equals(sqlState)) {
-				logger.warn("updateCourse: A required field is missing (NULL constraint violation)", e);
-				throw new ValidationException("A required field is missing (NULL constraint violation)", e);
-			}
-
-			logger.error("Error updating course: {}", course, e);
-			throw new DAOException("Failed to update course", e);
+			SQLExceptionUtil.handleSQLException(e, getDAOExceptionMap(e));
 		}
 	}
 
@@ -202,5 +181,16 @@ public class CourseDao {
 			logger.error("Error deleting course with ID: {}", courseId, e);
 			throw new DAOException("Failed to delete course with ID: " + courseId, e);
 		}
+	}
+
+	private Map<String, DAOException> getDAOExceptionMap(SQLException e) {
+		Map<String, DAOException> exceptionMap = new HashMap<>();
+
+		exceptionMap.put(DAOErrorCode.UNIQUE_VIOLATION,
+				new CourseNameDAOException("A course with the same name already exists.", e));
+		exceptionMap.put(DAOErrorCode.NULL_CONSTRAINT_VIOLATION,
+				new ValidationException("A required field is missing (NULL constraint violation)", e));
+
+		return exceptionMap;
 	}
 }
