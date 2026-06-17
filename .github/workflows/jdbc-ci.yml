@@ -1,26 +1,6 @@
-name: JDBC School Application CI
-
-on:
-  push:
-    branches:
-      - main
-
-  pull_request:
-    branches:
-      - main
-
-  workflow_dispatch:
-
-permissions:
-  contents: read
-
-concurrency:
-  group: jdbc-ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  build-and-test:
-    name: Build and test
+  test:
+    name: Run tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -39,12 +19,86 @@ jobs:
       - name: Check Docker availability
         run: docker version
 
-      - name: Build application and run tests
+      - name: Run Maven tests
         run: |
           mvn \
             --batch-mode \
             --no-transfer-progress \
-            clean verify
+            clean test
+
+      - name: Publish test summary
+        if: always()
+        shell: bash
+        run: |
+          python3 <<'PY'
+          import os
+          import sys
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          reports = sorted(
+              Path("target/surefire-reports").glob("TEST-*.xml")
+          )
+
+          totals = {
+              "tests": 0,
+              "failures": 0,
+              "errors": 0,
+              "skipped": 0,
+          }
+          duration = 0.0
+
+          for report in reports:
+              root = ET.parse(report).getroot()
+
+              for key in totals:
+                  totals[key] += int(root.attrib.get(key, 0))
+
+              duration += float(root.attrib.get("time", 0.0))
+
+          passed = (
+              totals["tests"]
+              - totals["failures"]
+              - totals["errors"]
+              - totals["skipped"]
+          )
+
+          summary = f"""## JDBC test results
+
+          | Result | Count |
+          |---|---:|
+          | Test suites | {len(reports)} |
+          | Total tests | {totals["tests"]} |
+          | Passed | {passed} |
+          | Failures | {totals["failures"]} |
+          | Errors | {totals["errors"]} |
+          | Skipped | {totals["skipped"]} |
+          | Reported duration | {duration:.3f} s |
+          """
+
+          print(summary)
+
+          with open(
+              os.environ["GITHUB_STEP_SUMMARY"],
+              "a",
+              encoding="utf-8",
+          ) as summary_file:
+              summary_file.write(summary)
+
+          if not reports:
+              print("No Surefire XML reports were generated.")
+              sys.exit(1)
+
+          if totals["tests"] == 0:
+              print("Surefire reports contain zero tests.")
+              sys.exit(1)
+
+          if totals["failures"] > 0 or totals["errors"] > 0:
+              print("One or more tests failed.")
+              sys.exit(1)
+
+          print("All tests completed successfully.")
+          PY
 
       - name: Upload test reports
         if: always()
@@ -53,13 +107,4 @@ jobs:
           name: jdbc-test-reports
           path: target/surefire-reports/
           if-no-files-found: warn
-          retention-days: 14
-
-      - name: Upload executable JAR
-        if: success()
-        uses: actions/upload-artifact@v7
-        with:
-          name: school-application-jdbc
-          path: target/SchoolApplication-0.0.1-SNAPSHOT.jar
-          if-no-files-found: error
           retention-days: 14
