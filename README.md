@@ -82,6 +82,41 @@ docs/diagrams/database-schema.svg
 
 ---
 
+## Application Structure
+
+The application is organized as a small layered console project. The console UI handles user interaction, DAO classes perform manual JDBC operations, and domain classes represent the main school-management entities.
+
+![School Application JDBC application structure](docs/diagrams/class-overview.svg)
+
+| Layer               | Main classes                                                                    | Responsibility                                                             |
+| ------------------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Entry point         | `App`                                                                           | Starts the console application                                             |
+| Console UI          | `MainMenu`, `MenuActions`                                                       | Reads user input and delegates selected actions                            |
+| DAO layer           | `StudentDao`, `CourseDao`, `GroupDao`, `GroupStudentsDao`, `StudentsCoursesDao` | Executes SQL queries and maps database rows                                |
+| JDBC infrastructure | `ConnectionPool`, `PropertiesLoader`, `SQLExceptionUtil`                        | Provides database connections, loads configuration, and handles SQL errors |
+| Domain model        | `Student`, `Group`, `Course`                                                    | Represents the main school-management entities                             |
+| Validation          | `EntityValidator`, `FieldStringValidator`, `StringValidationParameters`         | Checks input before DAO operations                                         |
+
+This diagram intentionally hides method-level details and focuses on the manual persistence flow:
+
+```text
+App → Console UI → DAO Layer → JDBC Infrastructure → PostgreSQL
+```
+
+The PlantUML source for this diagram is stored in:
+
+```text
+docs/diagrams/class-overview.puml
+```
+
+The rendered SVG diagram is stored in:
+
+```text
+docs/diagrams/class-overview.svg
+```
+
+---
+
 ## Build and Test
 
 Run the test suite:
