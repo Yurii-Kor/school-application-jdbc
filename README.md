@@ -5,12 +5,19 @@
 [![JDBC CI](https://github.com/Yurii-Kor/school-application-jdbc/actions/workflows/jdbc-ci.yml/badge.svg)](https://github.com/Yurii-Kor/school-application-jdbc/actions/workflows/jdbc-ci.yml)
 ![Java](https://img.shields.io/badge/Java-17-orange)
 ![Maven](https://img.shields.io/badge/Build-Maven-blue)
+![JDBC](https://img.shields.io/badge/Persistence-Plain%20JDBC-blue)
 ![Database](https://img.shields.io/badge/Database-PostgreSQL-blue)
 ![Type](https://img.shields.io/badge/Type-Console%20Application-lightgrey)
 
-Console-based school management application built with plain Java, JDBC, PostgreSQL, SQL migrations, DAO classes, and manual application wiring.
+Console-based school management application built with plain Java, JDBC, PostgreSQL, SQL migrations, DAO pattern, HikariCP, Flyway, and manual application wiring.
 
-This repository intentionally keeps the infrastructure simple. It does not include Docker-based deployment because its main purpose is to demonstrate the manual persistence baseline before moving to Spring-based infrastructure in the next projects of the series.
+This project is the first step in the School Application learning series. It represents the manual persistence baseline before moving to Spring JDBC, Hibernate / JPA, and Spring Data JPA.
+
+Unlike the later Spring Boot versions, this project does not rely on framework-managed dependency injection, repository abstractions, or automatic infrastructure configuration. Database access is implemented manually through JDBC-based DAO classes, while application objects are wired explicitly in code.
+
+The project also demonstrates the infrastructure work that Spring Boot usually hides or simplifies. Connection pooling is configured through HikariCP, and database migrations are triggered through Flyway instead of relying on Spring Boot auto-configuration.
+
+For background on these infrastructure pieces, see the Baeldung guides: [Database Migrations with Flyway](https://www.baeldung.com/database-migrations-with-flyway) and [Introduction to HikariCP](https://www.baeldung.com/hikaricp).
 
 ---
 
