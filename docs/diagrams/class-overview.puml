@@ -1,0 +1,41 @@
+@startuml
+title School Application JDBC - Application Structure Overview
+
+skinparam shadowing false
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam rectangle {
+  RoundCorner 12
+}
+hide stereotype
+
+top to bottom direction
+
+rectangle "Entry Point\n\nApp\n\nStarts the console application" as app
+
+rectangle "Console UI\n\nMainMenu\nMenuActions\n\nReads user input and delegates selected actions" as ui
+
+rectangle "DAO Layer\n\nStudentDao\nCourseDao\nGroupDao\nGroupStudentsDao\nStudentsCoursesDao\n\nExecutes SQL queries and maps database rows" as dao
+
+rectangle "JDBC Infrastructure\n\nConnectionPool\nPropertiesLoader\nSQLExceptionUtil\n\nCreates connections, loads DB settings, handles SQL errors" as jdbc
+
+rectangle "Validation\n\nEntityValidator\nFieldStringValidator\nStringValidationParameters\n\nChecks input before DAO operations" as validation
+
+rectangle "Domain Model\n\nStudent\nGroup\nCourse\n\nRepresents school-management entities" as domain
+
+database "PostgreSQL\n\nTables:\ngroups\nstudents\ncourses\nstudents_courses" as db
+
+app --> ui : starts
+ui --> dao : calls commands
+dao --> jdbc : gets connections
+jdbc --> db : JDBC
+dao --> validation : validates input
+dao --> domain : maps data
+
+note bottom of dao
+This project intentionally keeps persistence manual:
+SQL queries, DAO classes, JDBC connections,
+and explicit row-to-object mapping.
+end note
+
+@enduml
